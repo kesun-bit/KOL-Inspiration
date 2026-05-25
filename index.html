@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixelpose</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#f8f8f7',
+            paper2: '#f3f3f2',
+            surface: '#ffffff',
+            ink: '#3f3f3f',
+            deep: '#2f2f2f',
+            wash: '#ececeb',
+            line: 'rgba(0,0,0,0.08)',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          boxShadow: {
+            card: '0 6px 24px rgba(0,0,0,0.06)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      background: linear-gradient(180deg, #fafaf9 0%, #f4f4f3 100%);
+    }
+    .page-shell { width: 100%; padding-left: 12px; padding-right: 12px; }
+    @media (min-width: 640px) { .page-shell { padding-left: 16px; padding-right: 16px; } }
+    @media (min-width: 1024px) { .page-shell { padding-left: 20px; padding-right: 20px; } }
+
+    .masonry { column-count: 2; column-gap: 12px; }
+    @media (min-width: 640px) { .masonry { column-count: 3; column-gap: 14px; } }
+    @media (min-width: 768px) { .masonry { column-count: 4; } }
+    @media (min-width: 1024px) { .masonry { column-count: 5; column-gap: 16px; } }
+    @media (min-width: 1280px) { .masonry { column-count: 6; } }
+    @media (min-width: 1536px) { .masonry { column-count: 7; } }
+    .masonry-item { break-inside: avoid; margin-bottom: 12px; }
+
+    .tab-segment .main-tab {
+      padding: 8px 18px;
+      border-radius: 999px;
+      color: #7a7a7a;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .2s ease;
+    }
+    .tab-segment .main-tab.tab-active {
+      background: #fff;
+      color: #3f3f3f;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    .filter-scroll { -ms-overflow-style: none; scrollbar-width: none; gap: 22px; }
+    .filter-scroll::-webkit-scrollbar { display: none; }
+    .filter-link {
+      position: relative;
+      color: #6f6f6f;
+      padding: 8px 4px;
+      font-size: 13px;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      transition: color .2s ease;
+    }
+    .filter-link:hover { color: #3f3f3f; }
+    .filter-link-active {
+      color: #2f2f2f;
+      font-weight: 600;
+    }
+    .filter-link-active::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 2px;
+      border-radius: 2px;
+      background: #2f2f2f;
+    }
+
+    .btn-godly {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.12);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all .2s ease;
+    }
+    .btn-godly:hover { background: #ececeb; }
+    .btn-godly-primary {
+      background: #3a3a3a;
+      border-color: #3a3a3a;
+      color: #fff;
+    }
+    .btn-godly-primary:hover { background: #2f2f2f; border-color: #2f2f2f; }
+
+    .morandi-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #e5e5e2;
+      color: #474747;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .media-card {
+      border-radius: 20px;
+      overflow: hidden;
+      background: #f0f0ef;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+      transition: transform .35s cubic-bezier(.16,1,.3,1);
+    }
+    .media-card:hover { transform: translateY(-2px); }
+    .media-card img { transition: transform .6s cubic-bezier(.16,1,.3,1); }
+    .media-card:hover img { transform: scale(1.03); }
+    .context-menu {
+      position: fixed;
+      z-index: 70;
+      min-width: 140px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.12);
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+      padding: 6px;
+    }
+    .context-menu-item {
+      width: 100%;
+      text-align: left;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #3f3f3f;
+      transition: background .15s ease;
+    }
+    .context-menu-item:hover { background: #f2f2f2; }
+
+    .kol-card {
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 8px 26px rgba(0,0,0,.08);
+      background: #fff;
+    }
+    .kol-image { aspect-ratio: 4/5; background: #efefee; overflow: hidden; position: relative; }
+    .kol-image img { width: 100%; height: 100%; object-fit: cover; }
+    .kol-overlay {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 16px 14px 14px;
+      background: linear-gradient(to top, rgba(0,0,0,.52) 0%, rgba(0,0,0,.28) 55%, transparent 100%);
+      color: #fff;
+    }
+    .kol-name { font-size: 17px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    .kol-desc { margin-top: 6px; font-size: 12px; line-height: 1.45; color: rgba(255,255,255,.92); text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+    .kol-followers {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: rgba(255,255,255,.92);
+    }
+    .kol-profile-btn {
+      flex-shrink: 0;
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      transition: opacity .2s ease;
+    }
+    .kol-profile-btn:hover { opacity: .88; }
+
+    .header-search {
+      position: relative;
+      flex-shrink: 1;
+      min-width: 0;
+      max-width: 220px;
+    }
+    .header-search input {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px 0 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.1);
+      background: #ececeb;
+      font-size: 13px;
+      color: #3f3f3f;
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .header-search input:focus {
+      border-color: rgba(0,0,0,.18);
+      box-shadow: 0 0 0 3px rgba(0,0,0,.04);
+    }
+    .header-search .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8a8a8a;
+      pointer-events: none;
+    }
+
+    .lightbox-enter { animation: fade .3s ease; }
+    @keyframes fade { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1);} }
+
+    .subheader-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 48px;
+    }
+    .btn-upload {
+      flex-shrink: 0;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2f2f2f;
+      transition: opacity .2s ease;
+    }
+    .btn-upload:hover { opacity: .7; }
+
+    .lightbox-tag {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.88);
+      line-height: 1.2;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      color: #3f3f3f;
+      transition: background .15s ease, opacity .15s ease;
+    }
+    .icon-btn:hover { background: #ececeb; }
+
+    .fav-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 5;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(0,0,0,.28);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .media-card:hover .fav-btn,
+    .kol-image:hover .fav-btn,
+    .fav-btn.is-active { opacity: 1; }
+    .fav-btn:hover { transform: scale(1.06); }
+
+    .user-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      min-width: 220px;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,.1);
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(0,0,0,.12);
+      padding: 8px;
+      z-index: 50;
+    }
+    .user-menu-item {
+      width: 100%;
+      text-align: left;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #3f3f3f;
+      transition: background .15s ease;
+    }
+    .user-menu-item:hover { background: #f2f2f2; }
+    .user-menu-divider { height: 1px; background: rgba(0,0,0,.08); margin: 6px 4px; }
+
+    .lang-popover {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.1);
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(0,0,0,.1);
+      padding: 6px;
+      z-index: 50;
+      min-width: 120px;
+    }
+    .lang-option {
+      width: 100%;
+      text-align: left;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .lang-option:hover { background: #f2f2f2; }
+    .lang-option-active { background: #ececeb; color: #2f2f2f; }
+
+    .favorites-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(420px, 100vw);
+      background: #fff;
+      z-index: 55;
+      box-shadow: -8px 0 32px rgba(0,0,0,.12);
+      transform: translateX(100%);
+      transition: transform .3s ease;
+    }
+    .favorites-drawer.open { transform: translateX(0); }
+    .fav-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .fav-thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #efefee; }
+    .fav-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    .header-top-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px 12px;
+    }
+    .header-top-center { justify-self: center; }
+    .header-top-right {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .drop-zone {
+      position: relative;
+      min-height: 148px;
+      border-radius: 16px;
+      border: 1.5px dashed rgba(0,0,0,.16);
+      background: #f3f3f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color .2s ease, background .2s ease;
+    }
+    .drop-zone:hover, .drop-zone:focus-visible { border-color: rgba(0,0,0,.28); background: #ececeb; }
+    .drop-zone.is-dragover { border-color: #3f3f3f; background: #e8e8e6; }
+    .drop-zone.has-image { border-style: solid; border-color: rgba(0,0,0,.1); padding: 0; min-height: 0; }
+    .drop-zone-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .drop-zone.has-image .drop-zone-empty { display: none; }
+    .drop-zone-hint { font-size: 12px; color: #7a7a7a; line-height: 1.4; max-width: 220px; }
+    .drop-zone-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .drop-zone.has-image .drop-zone-preview { display: block; }
+    .drop-zone:not(.has-image) .drop-zone-preview { display: none; }
+    .drop-zone-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
+    .drop-zone:not(.has-image) .drop-zone-remove { display: none; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body class="text-ink font-sans min-h-screen antialiased">
+
+  <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur-xl border-b border-line">
+    <div class="page-shell header-top-row h-[80px]">
+      <div class="flex items-center justify-start min-w-0">
+        <img src="file:///Users/keisun/.cursor/projects/Users-keisun-Desktop-KOL-Inspiration/assets/___1-e035360a-08ab-42f8-befc-f9923924bf51.png" alt="Pixelpose Logo" class="h-[52px] w-auto object-contain shrink-0" />
+      </div>
+      <nav id="main-tabs" class="tab-segment header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
+        <button data-tab="kol" class="main-tab tab-active" role="tab" data-i18n="tabKol">KOL</button>
+        <button data-tab="inspiration" class="main-tab" role="tab" data-i18n="tabInspiration">网图模特</button>
+        <button data-tab="ai-models" class="main-tab" role="tab" data-i18n="tabAi">AI模特</button>
+        <button data-tab="creative" class="main-tab" role="tab" data-i18n="tabCreative">灵感</button>
+      </nav>
+      <div class="header-top-right relative">
+        <div class="header-search hidden sm:block w-[120px] md:w-[160px] lg:w-[200px]">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+          <input id="global-search" type="search" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="搜索标签、风格..." />
+        </div>
+        <button id="btn-search-mobile" type="button" class="icon-btn sm:hidden" aria-label="Search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        </button>
+        <div class="relative">
+          <button id="btn-lang" type="button" class="icon-btn" aria-label="Language" title="CH / EN">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M5 12h10M5 16h6"/><circle cx="17" cy="12" r="4"/><path d="M15 10h4M15 14h4"/></svg>
+          </button>
+          <div id="lang-popover" class="lang-popover hidden">
+            <button type="button" class="lang-option lang-option-active" data-lang="zh">CH</button>
+            <button type="button" class="lang-option" data-lang="en">EN</button>
+          </div>
+        </div>
+        <button id="btn-favorites-open" type="button" class="icon-btn" aria-label="Favorites">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5l-1.1-1C5.5 14.8 2 11.6 2 7.9 2 5.2 4.2 3 7 3c1.7 0 3.3.8 4.3 2.1C12.3 3.8 14 3 15.7 3 18.5 3 20.7 5.2 20.7 7.9c0 3.7-3.5 6.9-8.9 11.6L12 20.5z"/></svg>
+        </button>
+        <div id="user-area" class="relative ml-0.5">
+          <button id="btn-login" type="button" class="hidden text-[13px] font-semibold text-deep hover:opacity-70 px-2 h-9" data-i18n="loginRegister">登录/注册</button>
+          <button id="btn-avatar" type="button" class="hidden w-9 h-9 rounded-full overflow-hidden border border-line bg-wash">
+            <img id="user-avatar-img" src="" alt="" class="w-full h-full object-cover" />
+          </button>
+          <div id="user-menu" class="user-menu hidden">
+            <div class="px-3 py-2 border-b border-line/80 mb-1">
+              <p id="menu-nickname" class="text-sm font-semibold text-deep"></p>
+              <p id="menu-account-type" class="text-xs text-ink/60 mt-0.5"></p>
+              <p id="menu-email" class="text-xs text-ink/50 mt-0.5 truncate"></p>
+            </div>
+            <button type="button" class="user-menu-item" id="menu-my-favorites" data-i18n="myFavorites">我的收藏</button>
+            <button type="button" class="user-menu-item" data-i18n="settings">设置</button>
+            <div class="user-menu-divider"></div>
+            <button type="button" class="user-menu-item text-red-600/90" id="menu-logout" data-i18n="logout">退出登录</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-shell">
+      <div id="subheader-kol" class="subheader-row">
+        <div id="filter-kol-ethnicity" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <button id="btn-add-kol" type="button" class="btn-upload" data-i18n="upload">Upload</button>
+      </div>
+      <div id="subheader-inspiration" class="subheader-row hidden">
+        <div id="filter-inspiration" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <button id="btn-add-inspiration" type="button" class="btn-upload" data-i18n="upload">Upload</button>
+      </div>
+      <div id="subheader-creative" class="subheader-row hidden">
+        <div id="filter-creative" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <button id="btn-add-creative" type="button" class="btn-upload" data-i18n="upload">Upload</button>
+      </div>
+      <div id="subheader-ai-models" class="subheader-row hidden">
+        <div id="filter-ai" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <button id="btn-add-ai" type="button" class="btn-upload" data-i18n="upload">Upload</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell pt-5 pb-16 w-full">
+    <section id="panel-kol" class="tab-panel">
+      <div id="kol-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4"></div>
+    </section>
+
+    <section id="panel-inspiration" class="tab-panel hidden">
+      <div id="inspiration-masonry" class="masonry"></div>
+    </section>
+
+    <section id="panel-creative" class="tab-panel hidden">
+      <div id="creative-masonry" class="masonry"></div>
+    </section>
+
+    <section id="panel-ai-models" class="tab-panel hidden">
+      <div id="ai-masonry" class="masonry"></div>
+    </section>
+  </main>
+
+  <div id="modal-kol" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
+    <div class="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-line shadow-card">
+      <div class="px-6 py-5 border-b border-line flex justify-between items-center">
+        <h3 id="modal-kol-title" class="text-lg font-semibold">添加 KOL</h3>
+        <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-kol">✕</button>
+      </div>
+      <form id="form-kol" class="p-6 space-y-4">
+        <input type="hidden" id="kol-id" />
+        <label class="block text-sm">账号名
+          <input name="name" required class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="@Aria_Vibe" /></label>
+        <label class="block text-sm">主页链接
+          <input name="account" type="url" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="https://instagram.com/..." /></label>
+        <label class="block text-sm">粉丝量
+          <input name="followers" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="128万" /></label>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="block text-sm">性别
+            <select name="gender" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>女</option><option>男</option><option>其他</option></select></label>
+          <label class="block text-sm">地区
+            <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="东京" /></label>
+        </div>
+        <label class="block text-sm">出海区域
+          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>欧美白人</option><option>中东</option><option>拉丁裔</option><option>黑人</option></select></label>
+        <label class="block text-sm">风格描述
+          <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="高冷/复古/Y2K" /></label>
+        <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
+          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="Y2K, 复古, 街拍" /></label>
+        <div class="block text-sm">
+          <span data-i18n="uploadImage">展示图</span>
+          <input type="hidden" name="image" id="kol-image-data" />
+          <div class="drop-zone mt-1.5" data-drop-input="kol-image-data" role="button" tabindex="0">
+            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+            <div class="drop-zone-empty">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+              <p class="drop-zone-hint" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+            </div>
+            <img class="drop-zone-preview" alt="" />
+            <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="btn-godly btn-godly-primary flex-1">保存</button>
+          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-kol">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-gallery" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
+    <div class="bg-surface rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-line shadow-card">
+      <div class="px-6 py-5 border-b border-line flex justify-between items-center">
+        <h3 id="modal-gallery-title" class="text-lg font-semibold">添加条目</h3>
+        <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-gallery">✕</button>
+      </div>
+      <form id="form-gallery" class="p-6 space-y-4">
+        <input type="hidden" id="gallery-type" />
+        <div class="block text-sm">
+          <span data-i18n="uploadImage">展示图</span>
+          <input type="hidden" name="image" id="gallery-image-data" />
+          <div class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
+            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+            <div class="drop-zone-empty">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+              <p class="drop-zone-hint" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+            </div>
+            <img class="drop-zone-preview" alt="" />
+            <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+          </div>
+        </div>
+        <label class="block text-sm">类型
+          <select name="category" id="gallery-category-select" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
+        <label class="block text-sm">描述 / Prompt
+          <input name="style" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="cinematic portrait, soft light..." /></label>
+        <label id="gallery-web-tags-field" class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在图片上）</span>
+          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="柔光, 人像, 白底" /></label>
+        <label id="gallery-tags-field" class="block text-sm hidden"><span data-i18n="detailTags">细节标签（逗号分隔，仅 AI 模特）</span>
+          <input name="tags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="白色针织开衫, 自然光, 浅景深" /></label>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="btn-godly btn-godly-primary flex-1">保存</button>
+          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-gallery">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="lightbox" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm lightbox-enter">
+    <button id="lightbox-close" type="button" class="absolute top-5 right-5 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition">✕</button>
+    <div id="lightbox-inner" class="max-w-6xl w-full flex flex-col md:flex-row gap-0 md:gap-4 items-stretch">
+      <div id="lightbox-image-wrap" class="flex-1 min-w-0 flex items-center justify-center rounded-[20px] overflow-hidden bg-black/40">
+        <img id="lightbox-img" src="" alt="" class="max-h-[85vh] w-full object-contain" />
+      </div>
+      <aside id="lightbox-sidebar" class="hidden md:flex flex-col w-full md:w-[320px] lg:w-[360px] xl:w-[380px] shrink-0 bg-[#1c1c1c] text-white/90 rounded-[20px] p-5 overflow-y-auto max-h-[85vh]">
+        <p class="text-[11px] uppercase tracking-wider text-white/45 mb-2" data-i18n="promptLabel">Prompt</p>
+        <p id="lightbox-prompt" class="text-sm leading-relaxed whitespace-pre-wrap text-white/90"></p>
+        <div id="lightbox-tags" class="mt-5 flex flex-wrap gap-2"></div>
+      </aside>
+      <aside id="lightbox-sidebar-mobile" class="md:hidden hidden flex-col w-full bg-[#1c1c1c] text-white/90 rounded-[20px] p-4 mt-3 max-h-[40vh] overflow-y-auto">
+        <p class="text-[11px] uppercase tracking-wider text-white/45 mb-2" data-i18n="promptLabel">Prompt</p>
+        <p id="lightbox-prompt-mobile" class="text-sm leading-relaxed whitespace-pre-wrap text-white/90"></p>
+        <div id="lightbox-tags-mobile" class="mt-4 flex flex-wrap gap-2"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="context-menu" class="context-menu hidden">
+    <button id="context-delete-btn" class="context-menu-item" data-i18n="delete">删除</button>
+  </div>
+
+  <div id="favorites-backdrop" class="fixed inset-0 z-[54] hidden bg-black/25"></div>
+  <aside id="favorites-drawer" class="favorites-drawer">
+    <div class="h-full flex flex-col">
+      <div class="px-5 py-4 border-b border-line flex items-center justify-between">
+        <h3 class="text-lg font-semibold" data-i18n="favoritesTitle">收藏夹</h3>
+        <button id="favorites-close" type="button" class="w-8 h-8 rounded-full hover:bg-wash flex items-center justify-center">✕</button>
+      </div>
+      <div id="favorites-list" class="flex-1 overflow-y-auto p-5"></div>
+    </div>
+  </aside>
+
+  <div id="modal-auth" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
+    <div class="bg-surface rounded-3xl w-full max-w-md border border-line shadow-card">
+      <div class="px-6 py-5 border-b border-line flex justify-between items-center">
+        <h3 id="auth-modal-title" class="text-lg font-semibold" data-i18n="login">登录</h3>
+        <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-auth">✕</button>
+      </div>
+      <form id="form-auth" class="p-6 space-y-4">
+        <label class="block text-sm"><span data-i18n="nickname">昵称</span>
+          <input name="nickname" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="Pixel User" /></label>
+        <label class="block text-sm"><span data-i18n="email">邮箱</span>
+          <input name="email" required type="email" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="you@email.com" /></label>
+        <label class="block text-sm"><span data-i18n="password">密码</span>
+          <input name="password" required type="password" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="••••••" /></label>
+        <p class="text-xs text-ink/50" data-i18n="authHint">演示模式：填写信息即可本地登录</p>
+        <button type="submit" class="btn-godly btn-godly-primary w-full" data-i18n="login">登录</button>
+        <button type="button" id="btn-switch-register" class="btn-godly w-full" data-i18n="switchRegister">没有账号？注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'kol-inspiration-app-v2';
+    const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
+    const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
+    const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
+    const KOL_ETHNICITY = ['全部', '欧美白人', '中东', '拉丁裔', '黑人'];
+
+    const I18N = {
+      zh: {
+        tabKol: 'KOL', tabInspiration: '网图模特', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
+        addCreative: '添加灵感',
+        loginRegister: '登录/注册', login: '登录', register: '注册', switchRegister: '没有账号？注册', switchLogin: '已有账号？登录',
+        nickname: '昵称', email: '邮箱', password: '密码', authHint: '演示模式：填写信息即可本地登录',
+        myFavorites: '我的收藏', settings: '设置', logout: '退出登录', favoritesTitle: '收藏夹',
+        favoritesEmpty: '暂无收藏', viewProfile: '查看主页', delete: '删除',
+        addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
+        save: '保存', cancel: '取消', noKol: '该分类暂无 KOL', noContent: '该分类暂无内容',
+        confirmDelete: '确定删除该图片吗？', accountTypePro: '专业版账户', accountTypeFree: '免费账户',
+        catAll: '全部', catBeauty: '美颜类', catHalf: '半身类', catScene: '大场景类', catMale: '男性',
+        catPlus: '大码', catGroup: '双人/多人', catProduct: '产品/动物/风景',
+        catCreativeAll: '全部', catCreativeType: '字体设计', catCreativeBrand: '品牌设计',
+        catCreativeHoliday: '节日主题', catCreativeCampaign: '玩法包装', catCreativeTrend: '趋势',
+        ethAll: '全部', ethWhite: '欧美白人', ethMiddleEast: '中东', ethLatino: '拉丁裔', ethBlack: '黑人',
+        genderUnknown: '未知', promptLabel: 'Prompt', detailTags: '细节标签（逗号分隔，仅 AI 模特）',
+        noPrompt: '未提供 prompt', settingsSoon: '设置功能即将上线',
+        searchPlaceholder: '搜索标签、风格...', searchTagsLabel: '搜索标签（逗号分隔，不显示在卡片上）',
+        noSearchResults: '未找到匹配内容', searchHint: '可搜索隐藏标签、风格、分类等',
+        uploadImage: '展示图', dropHint: '拖拽图片到此处，或点击选择', dropActive: '松开以上传',
+        removeImage: '移除', imageRequired: '请上传图片', imageInvalid: '请上传 JPG / PNG / WebP / GIF 图片',
+        imageTooLarge: '图片过大，请选择小于 15MB 的文件', imageProcessing: '正在处理图片…',
+      },
+      en: {
+        tabKol: 'KOL', tabInspiration: 'Web Model', tabCreative: 'Creative', tabAi: 'AI Model', upload: 'Upload',
+        addCreative: 'Add creative',
+        loginRegister: 'Log in / Sign up', login: 'Log in', register: 'Sign up', switchRegister: 'No account? Sign up', switchLogin: 'Have an account? Log in',
+        nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Demo: enter info to sign in locally',
+        myFavorites: 'My Favorites', settings: 'Settings', logout: 'Log out', favoritesTitle: 'Favorites',
+        favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', delete: 'Delete',
+        addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
+        save: 'Save', cancel: 'Cancel', noKol: 'No KOL in this category', noContent: 'No content in this category',
+        confirmDelete: 'Delete this item?', accountTypePro: 'Pro account', accountTypeFree: 'Free account',
+        catAll: 'All', catBeauty: 'Beauty', catHalf: 'Half-body', catScene: 'Large scene', catMale: 'Male',
+        catPlus: 'Plus size', catGroup: 'Group', catProduct: 'Product / Animal / Landscape',
+        catCreativeAll: 'All', catCreativeType: 'Typography', catCreativeBrand: 'Branding',
+        catCreativeHoliday: 'Holiday & Seasonal', catCreativeCampaign: 'Campaign', catCreativeTrend: 'Trending',
+        ethAll: 'All', ethWhite: 'Caucasian', ethMiddleEast: 'Middle East', ethLatino: 'Latino', ethBlack: 'Black',
+        genderUnknown: 'Unknown', promptLabel: 'Prompt', detailTags: 'Detail tags (comma, AI only)',
+        noPrompt: 'No prompt provided', settingsSoon: 'Settings coming soon',
+        searchPlaceholder: 'Search tags, styles...', searchTagsLabel: 'Search tags (comma, hidden on card)',
+        noSearchResults: 'No matching results', searchHint: 'Search hidden tags, styles, categories',
+        uploadImage: 'Image', dropHint: 'Drag image here, or click to browse', dropActive: 'Release to upload',
+        removeImage: 'Remove', imageRequired: 'Please upload an image', imageInvalid: 'Use JPG, PNG, WebP or GIF',
+        imageTooLarge: 'File too large. Max 15MB', imageProcessing: 'Processing image…',
+      },
+    };
+
+    const CAT_I18N_KEYS = {
+      '全部': 'catAll', '美颜类': 'catBeauty', '半身类': 'catHalf', '大场景类': 'catScene', '男性': 'catMale',
+      '大码': 'catPlus', '双人/多人': 'catGroup', '产品/动物/风景': 'catProduct',
+    };
+    const ETH_I18N_KEYS = {
+      '全部': 'ethAll', '欧美白人': 'ethWhite', '中东': 'ethMiddleEast', '拉丁裔': 'ethLatino', '黑人': 'ethBlack',
+    };
+    const CREATIVE_CAT_I18N_KEYS = {
+      '全部': 'catCreativeAll', '字体设计': 'catCreativeType', '品牌设计': 'catCreativeBrand',
+      '节日主题': 'catCreativeHoliday', '玩法包装': 'catCreativeCampaign', '趋势': 'catCreativeTrend',
+    };
+
+    let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login' };
+
+    const UNSPLASH_IMAGES = [
+      { id: 'u1', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&q=80', category: '美颜类', style: '清透自然' },
+      { id: 'u2', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80', category: '美颜类', style: '柔光人像' },
+      { id: 'u3', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&q=80', category: '美颜类', style: '都市时尚' },
+      { id: 'u4', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80', category: '半身类', style: '简约白底' },
+      { id: 'u5', image: 'https://images.unsplash.com/photo-1488426862026-3ee93a40d838?w=600&q=80', category: '半身类', style: '活力街拍' },
+      { id: 'u6', image: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=600&q=80', category: '半身类', style: '暖色调' },
+      { id: 'u7', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80', category: '大场景类', style: '山峦云海' },
+      { id: 'u8', image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&q=80', category: '大场景类', style: '森林晨光' },
+      { id: 'u9', image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&q=80', category: '大场景类', style: '雾霭山谷' },
+      { id: 'u10', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80', category: '男性', style: '硬朗肖像' },
+      { id: 'u11', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80', category: '男性', style: '商务休闲' },
+      { id: 'u12', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80', category: '男性', style: '阳光笑容' },
+      { id: 'u13', image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&q=80', category: '大码', style: '自信表达' },
+      { id: 'u14', image: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=600&q=80', category: '大码', style: '色彩鲜明' },
+      { id: 'u15', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&q=80', category: '大码', style: '职场气质' },
+      { id: 'u16', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80', category: '双人/多人', style: '好友聚会' },
+      { id: 'u17', image: 'https://images.unsplash.com/photo-1522075469751-3a66948fb095?w=600&q=80', category: '双人/多人', style: '团队协作' },
+      { id: 'u18', image: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&q=80', category: '双人/多人', style: '温馨家庭' },
+      { id: 'u19', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80', category: '产品/动物/风景', style: '运动产品' },
+      { id: 'u20', image: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=600&q=80', category: '产品/动物/风景', style: '萌宠猫咪' },
+      { id: 'u21', image: 'https://images.unsplash.com/photo-1472214103451-93784bd7920c?w=600&q=80', category: '产品/动物/风景', style: '草原风光' },
+      { id: 'u22', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80', category: '美颜类', style: '笑容灿烂' },
+      { id: 'u23', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&q=80', category: '美颜类', style: '湖畔倒影' },
+      { id: 'u24', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80', category: '半身类', style: '经典肖像' },
+      { id: 'u25', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80', category: '半身类', style: '街头潮流' },
+      { id: 'u26', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80', category: '大场景类', style: '林荫小道' },
+      { id: 'u27', image: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=600&q=80', category: '大场景类', style: '星空银河' },
+      { id: 'u28', image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=600&q=80', category: '男性', style: '侧脸轮廓' },
+      { id: 'u29', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&q=80', category: '男性', style: '正装绅士' },
+      { id: 'u30', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&q=80', category: '大码', style: '优雅坐姿' },
+      { id: 'u31', image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=600&q=80', category: '双人/多人', style: '闺蜜出游' },
+      { id: 'u32', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80', category: '双人/多人', style: '户外欢笑' },
+      { id: 'u33', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80', category: '产品/动物/风景', style: '香氛产品' },
+      { id: 'u34', image: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=600&q=80', category: '产品/动物/风景', style: '可爱仓鼠' },
+      { id: 'u35', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80', category: '产品/动物/风景', style: '碧海沙滩' },
+      { id: 'u36', image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600&q=80', category: '大场景类', style: '雪山晨曦' },
+      { id: 'u37', image: 'https://images.unsplash.com/photo-1524502397800-2e73479fd698?w=600&q=80', category: '美颜类', style: '清透底妆' },
+      { id: 'u38', image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=600&q=80', category: '美颜类', style: '温柔微笑' },
+      { id: 'u39', image: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=600&q=80', category: '半身类', style: '海边半身' },
+      { id: 'u40', image: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=600&q=80', category: '半身类', style: '都市通勤' },
+      { id: 'u41', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80', category: '大场景类', style: '雪山远景' },
+      { id: 'u42', image: 'https://images.unsplash.com/photo-1475924156734-496f6b6a81b9?w=600&q=80', category: '大场景类', style: '日落海岸' },
+      { id: 'u43', image: 'https://images.unsplash.com/photo-1564564321837-a57b93a2d841?w=600&q=80', category: '男性', style: '户外型男' },
+      { id: 'u44', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80', category: '男性', style: '运动活力' },
+      { id: 'u45', image: 'https://images.unsplash.com/photo-1614204424926-1b135ed65fc8?w=600&q=80', category: '大码', style: '自信大片' },
+      { id: 'u46', image: 'https://images.unsplash.com/photo-1607746882042-94463dfe10bf?w=600&q=80', category: '双人/多人', style: '好友合照' },
+      { id: 'u47', image: 'https://images.unsplash.com/photo-1556912173-46c336c7fd55?w=600&q=80', category: '产品/动物/风景', style: '美食静物' },
+      { id: 'u48', image: 'https://images.unsplash.com/photo-1516035069371-29a1db244fca?w=600&q=80', category: '产品/动物/风景', style: '城市夜景' },
+    ];
+
+    const CREATIVE_MOCK = [
+      { id: 'cr1', image: 'https://images.unsplash.com/photo-1626785774573-4b17457b6080?w=600&q=80', category: '字体设计', style: 'Bold typography poster, high contrast' },
+      { id: 'cr2', image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=600&q=80', category: '字体设计', style: 'Minimal serif layout, editorial' },
+      { id: 'cr3', image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=600&q=80', category: '字体设计', style: 'Neon lettering, night city vibe' },
+      { id: 'cr4', image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&q=80', category: '品牌设计', style: 'Clean brand identity mockup' },
+      { id: 'cr5', image: 'https://images.unsplash.com/photo-1618005182384-a83a8d57fbe1?w=600&q=80', category: '品牌设计', style: 'Gradient logo system, modern SaaS' },
+      { id: 'cr6', image: 'https://images.unsplash.com/photo-1634942536768-746e6f1853f3?w=600&q=80', category: '品牌设计', style: 'Packaging design, premium skincare' },
+      { id: 'cr7', image: 'https://images.unsplash.com/photo-1513885535751-8b923f4c4f9c?w=600&q=80', category: '节日主题', style: 'Christmas warm lights, cozy mood' },
+      { id: 'cr8', image: 'https://images.unsplash.com/photo-1543589923-d58f523da2e0?w=600&q=80', category: '节日主题', style: 'Lunar new year red gold palette' },
+      { id: 'cr9', image: 'https://images.unsplash.com/photo-1482517967863-00e15c717b44?w=600&q=80', category: '节日主题', style: 'Summer festival poster colors' },
+      { id: 'cr10', image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&q=80', category: '玩法包装', style: 'Campaign key visual, team collaboration' },
+      { id: 'cr11', image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80', category: '玩法包装', style: 'Interactive launch teaser layout' },
+      { id: 'cr12', image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80', category: '玩法包装', style: 'Growth campaign dashboard aesthetic' },
+      { id: 'cr13', image: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a603ea?w=600&q=80', category: '趋势', style: 'Y2K chrome texture, trending' },
+      { id: 'cr14', image: 'https://images.unsplash.com/photo-1614850523459-d2c6c4c5c5b1?w=600&q=80', category: '趋势', style: 'Glassmorphism UI mood board' },
+      { id: 'cr15', image: 'https://images.unsplash.com/photo-1558591710-4bfcf4fb3e3f?w=600&q=80', category: '趋势', style: 'AI art collage, social trend' },
+      { id: 'cr16', image: 'https://images.unsplash.com/photo-1572044162444-ad7f128b66c1?w=600&q=80', category: '字体设计', style: 'Handwritten brush type poster' },
+      { id: 'cr17', image: 'https://images.unsplash.com/photo-1607083206869-4c7672f72a4e?w=600&q=80', category: '品牌设计', style: 'Coffee brand visual system' },
+      { id: 'cr18', image: 'https://images.unsplash.com/photo-1513151233558-fbf39889ce6f?w=600&q=80', category: '节日主题', style: 'Halloween neon graphic style' },
+    ];
+
+    const DEFAULT_KOLS = [
+      { id: 'kol-1', name: '@Aria_Vibe', account: 'https://www.instagram.com', followers: '286万', gender: '女', region: 'Los Angeles', ethnicity: '欧美白人', accountType: '高冷/复古/Y2K', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&q=80' },
+      { id: 'kol-2', name: '@Omar_Frame', account: 'https://www.instagram.com', followers: '152万', gender: '男', region: '迪拜', ethnicity: '中东', accountType: '街头/暗调', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80' },
+      { id: 'kol-3', name: '@SofiaMood', account: 'https://www.instagram.com', followers: '98万', gender: '女', region: 'São Paulo', ethnicity: '拉丁裔', accountType: '胶片/松弛感', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
+      { id: 'kol-4', name: '@MayaGlow', account: 'https://www.instagram.com', followers: '210万', gender: '女', region: 'Paris', ethnicity: '欧美白人', accountType: '法式优雅/柔光', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&q=80' },
+      { id: 'kol-5', name: '@Kenji_Style', account: 'https://www.instagram.com', followers: '76万', gender: '男', region: 'Tokyo', ethnicity: '欧美白人', accountType: '日系极简/工装', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80' },
+      { id: 'kol-6', name: '@LaylaLens', account: 'https://www.instagram.com', followers: '134万', gender: '女', region: 'Cairo', ethnicity: '中东', accountType: '奢华质感/金调', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80' },
+      { id: 'kol-7', name: '@DiegoWave', account: 'https://www.instagram.com', followers: '88万', gender: '男', region: 'Mexico City', ethnicity: '拉丁裔', accountType: '阳光户外/运动', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80' },
+      { id: 'kol-8', name: '@ZaraNoir', account: 'https://www.instagram.com', followers: '165万', gender: '女', region: 'London', ethnicity: '黑人', accountType: '高级时装/暗调', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
+      { id: 'kol-9', name: '@ChrisUrban', account: 'https://www.instagram.com', followers: '54万', gender: '男', region: 'Berlin', ethnicity: '欧美白人', accountType: '街头潮流/高对比', image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=500&q=80' },
+      { id: 'kol-10', name: '@NinaSoft', account: 'https://www.instagram.com', followers: '192万', gender: '女', region: 'Seoul', ethnicity: '欧美白人', accountType: '韩系清透/少女感', image: 'https://images.unsplash.com/photo-1524502397800-2e73479fd698?w=500&q=80' },
+      { id: 'kol-11', name: '@AmirFocus', account: 'https://www.instagram.com', followers: '61万', gender: '男', region: 'Riyadh', ethnicity: '中东', accountType: '商务精英/正装', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&q=80' },
+      { id: 'kol-12', name: '@CamilaHue', account: 'https://www.instagram.com', followers: '117万', gender: '女', region: 'Buenos Aires', ethnicity: '拉丁裔', accountType: '色彩鲜明/度假风', image: 'https://images.unsplash.com/photo-1488426862026-3ee93a40d838?w=500&q=80' },
+      { id: 'kol-13', name: '@JordanFit', account: 'https://www.instagram.com', followers: '93万', gender: '男', region: 'Atlanta', ethnicity: '黑人', accountType: '健身活力/明快', image: 'https://images.unsplash.com/photo-1564564321837-a57b93a2d841?w=500&q=80' },
+      { id: 'kol-14', name: '@ElenaMuse', account: 'https://www.instagram.com', followers: '248万', gender: '女', region: 'Milan', ethnicity: '欧美白人', accountType: '杂志大片/冷艳', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80' },
+      { id: 'kol-15', name: '@PriyaGlow', account: 'https://www.instagram.com', followers: '72万', gender: '女', region: 'Mumbai', ethnicity: '中东', accountType: '民族风/珠宝点缀', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80' },
+    ];
+
+    let state = { kols: [], inspiration: [], creative: [], aiModels: [], filterKolEthnicity: '全部', filterInspiration: '全部', filterCreative: '全部', filterAi: '全部', searchQuery: '' };
+    const uid = (p='id') => `${p}-${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+
+    function buildKolSearchTags(kol) {
+      const manual = Array.isArray(kol.searchTags) ? kol.searchTags : parseTagsFromString(kol.searchTagsRaw || '');
+      const fromDesc = parseTagsFromString((kol.accountType || '').replace(/\//g, ','));
+      const base = [kol.name, kol.accountType, kol.ethnicity, kol.gender, kol.region, kol.followers, ...fromDesc, ...manual];
+      return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    function buildInspirationSearchTags(item) {
+      const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
+      const fromStyle = parseTagsFromString(item.style || '');
+      const base = [item.category, item.style, ...fromStyle, ...(item.tags || []), ...manual];
+      return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    function buildCreativeSearchTags(item) {
+      const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
+      const fromStyle = parseTagsFromString(item.style || '');
+      const base = [item.category, item.style, ...fromStyle, ...manual];
+      return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    function migrateCreativeItem(i) {
+      const item = { ...i };
+      if (!item.searchTags?.length) item.searchTags = buildCreativeSearchTags(item);
+      return item;
+    }
+
+    function buildAiSearchTags(item) {
+      const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
+      const fromPrompt = parseTagsFromString(item.prompt || '');
+      const fromStyle = parseTagsFromString(item.style || '');
+      const base = [item.category, item.style, item.prompt, ...fromPrompt, ...fromStyle, ...(item.tags || []), ...manual];
+      return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    function migrateKolItem(k) {
+      const item = { ...k, ethnicity: k.ethnicity || '欧美白人', accountType: k.accountType || '简约' };
+      if (!item.searchTags?.length) item.searchTags = buildKolSearchTags(item);
+      return item;
+    }
+
+    function migrateInspirationItem(i) {
+      const item = { ...i };
+      if (!item.searchTags?.length) item.searchTags = buildInspirationSearchTags(item);
+      return item;
+    }
+
+    function migrateKols(kols) { return (kols || []).map(migrateKolItem); }
+
+    function matchesSearch(tags, extraText = '') {
+      const q = state.searchQuery.trim().toLowerCase();
+      if (!q) return true;
+      const hay = `${extraText} ${(tags || []).join(' ')}`.toLowerCase();
+      return q.split(/\s+/).filter(Boolean).every((term) => hay.includes(term));
+    }
+
+    function getActiveTab() {
+      return document.querySelector('.main-tab.tab-active')?.dataset.tab || 'kol';
+    }
+
+    function runActiveSearchRender() {
+      const tab = getActiveTab();
+      if (tab === 'kol') renderKols();
+      else if (tab === 'inspiration') renderInspiration();
+      else if (tab === 'creative') renderCreative();
+      else if (tab === 'ai-models') renderAi();
+    }
+
+    function t(key) { return I18N[appMeta.lang]?.[key] ?? I18N.zh[key] ?? key; }
+    function tCat(cat) { return t(CAT_I18N_KEYS[cat] || 'catAll'); }
+    function tCreativeCat(cat) { return t(CREATIVE_CAT_I18N_KEYS[cat] || 'catCreativeAll'); }
+    function tEth(eth) { return t(ETH_I18N_KEYS[eth] || 'ethAll'); }
+    function favKey(type, id) { return `${type}:${id}`; }
+
+    function loadState() {
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) raw = localStorage.getItem(STORAGE_KEY_LEGACY);
+      try {
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          appMeta.lang = parsed.lang === 'en' ? 'en' : 'zh';
+          appMeta.user = parsed.user || null;
+          appMeta.favorites = Array.isArray(parsed.favorites) ? parsed.favorites : [];
+          state.searchQuery = parsed.searchQuery || '';
+          state.kols = migrateKols(parsed.kols);
+          state.inspiration = (parsed.inspiration || []).map(migrateInspirationItem);
+          state.creative = (parsed.creative || []).map(migrateCreativeItem);
+          state.aiModels = (parsed.aiModels || []).map((i) => ({
+            ...i,
+            prompt: i.prompt || i.style || t('noPrompt'),
+            tags: Array.isArray(i.tags) ? i.tags : buildAiTags(i.style, i.category),
+          }));
+          if (state.kols.length < 8) state.kols = [...DEFAULT_KOLS];
+          if (state.inspiration.length < 30) {
+            state.inspiration = UNSPLASH_IMAGES.map((i) => migrateInspirationItem({ ...i, id: `insp-${i.id}` }));
+          }
+          if (!state.creative.length) {
+            state.creative = CREATIVE_MOCK.map((i) => migrateCreativeItem({ ...i, id: `creative-${i.id}` }));
+          }
+          document.getElementById('global-search').value = state.searchQuery;
+          return;
+        }
+      } catch (e) { console.warn('load failed', e); }
+      state.kols = DEFAULT_KOLS.map(migrateKolItem);
+      state.inspiration = UNSPLASH_IMAGES.map((i) => migrateInspirationItem({ ...i, id: `insp-${i.id}` }));
+      state.creative = CREATIVE_MOCK.map((i) => migrateCreativeItem({ ...i, id: `creative-${i.id}` }));
+      state.aiModels = UNSPLASH_IMAGES.map((i) => ({
+        ...i,
+        id: `ai-${i.id}`,
+        prompt: buildAiPrompt(i.style, i.category),
+        tags: buildAiTags(i.style, i.category),
+      }));
+      saveState();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          kols: state.kols,
+          inspiration: state.inspiration,
+          creative: state.creative,
+          aiModels: state.aiModels,
+          searchQuery: state.searchQuery,
+          lang: appMeta.lang,
+          user: appMeta.user,
+          favorites: appMeta.favorites,
+        }));
+      } catch (e) {
+        console.warn('save failed', e);
+        alert(appMeta.lang === 'en' ? 'Storage full. Try removing some uploaded images.' : '本地存储空间不足，请删除部分已上传的图片后重试。');
+      }
+    }
+
+    function esc(s) { const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+    function tagHtml(label) { return `<span class="morandi-tag">${esc(label)}</span>`; }
+
+    const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+    const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80';
+
+    function getDropZone(inputId) {
+      return document.querySelector(`.drop-zone[data-drop-input="${inputId}"]`);
+    }
+
+    function setDropZoneImage(inputId, src) {
+      const input = document.getElementById(inputId);
+      const zone = getDropZone(inputId);
+      if (!input || !zone) return;
+      const preview = zone.querySelector('.drop-zone-preview');
+      if (src) {
+        input.value = src;
+        preview.src = src;
+        zone.classList.add('has-image');
+      } else {
+        clearDropZone(inputId);
+      }
+    }
+
+    function clearDropZone(inputId) {
+      const input = document.getElementById(inputId);
+      const zone = getDropZone(inputId);
+      if (!input || !zone) return;
+      input.value = '';
+      const preview = zone.querySelector('.drop-zone-preview');
+      preview.removeAttribute('src');
+      zone.classList.remove('has-image', 'is-dragover');
+      const fileInput = zone.querySelector('.drop-file-input');
+      if (fileInput) fileInput.value = '';
+    }
+
+    function compressImageFile(file, maxW = 1200, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, maxW / img.width);
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = () => reject(new Error('decode'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('read'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleImageFile(file, inputId) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert(t('imageInvalid'));
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        alert(t('imageTooLarge'));
+        return;
+      }
+      const zone = getDropZone(inputId);
+      const hint = zone?.querySelector('.drop-zone-hint');
+      const prevHint = hint?.textContent;
+      if (hint) hint.textContent = t('imageProcessing');
+      try {
+        const dataUrl = await compressImageFile(file);
+        setDropZoneImage(inputId, dataUrl);
+      } catch (err) {
+        console.warn('image compress failed', err);
+        alert(t('imageInvalid'));
+      } finally {
+        if (hint && prevHint) hint.textContent = prevHint;
+      }
+    }
+
+    function initImageDropZones() {
+      document.querySelectorAll('.drop-zone[data-drop-input]').forEach((zone) => {
+        const inputId = zone.dataset.dropInput;
+        const hidden = document.getElementById(inputId);
+        const fileInput = zone.querySelector('.drop-file-input');
+        const removeBtn = zone.querySelector('.drop-zone-remove');
+        if (!hidden || !fileInput) return;
+
+        const openPicker = () => fileInput.click();
+
+        zone.addEventListener('click', (e) => {
+          if (e.target.closest('.drop-zone-remove')) return;
+          openPicker();
+        });
+        zone.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(); }
+        });
+        fileInput.addEventListener('change', () => {
+          const file = fileInput.files?.[0];
+          if (file) handleImageFile(file, inputId);
+        });
+        removeBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          clearDropZone(inputId);
+        });
+
+        ['dragenter', 'dragover'].forEach((ev) => {
+          zone.addEventListener(ev, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.add('is-dragover');
+            const hint = zone.querySelector('.drop-zone-hint');
+            if (hint && ev === 'dragenter') hint.textContent = t('dropActive');
+          });
+        });
+        zone.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          if (!zone.contains(e.relatedTarget)) {
+            zone.classList.remove('is-dragover');
+            const hint = zone.querySelector('.drop-zone-hint');
+            if (hint) hint.textContent = t('dropHint');
+          }
+        });
+        zone.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.remove('is-dragover');
+          const hint = zone.querySelector('.drop-zone-hint');
+          if (hint) hint.textContent = t('dropHint');
+          const file = e.dataTransfer?.files?.[0];
+          if (file) await handleImageFile(file, inputId);
+        });
+      });
+    }
+
+    function isFavorite(type, id) {
+      return appMeta.favorites.includes(favKey(type, id));
+    }
+
+    function toggleFavorite(type, id) {
+      const key = favKey(type, id);
+      const idx = appMeta.favorites.indexOf(key);
+      if (idx >= 0) appMeta.favorites.splice(idx, 1);
+      else appMeta.favorites.push(key);
+      saveState();
+      updateFavoriteButtons();
+    }
+
+    function heartSvg(filled) {
+      if (filled) {
+        return '<svg width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="1.5"><path d="M12 20.5l-1.1-1C5.5 14.8 2 11.6 2 7.9 2 5.2 4.2 3 7 3c1.7 0 3.3.8 4.3 2.1C12.3 3.8 14 3 15.7 3 18.5 3 20.7 5.2 20.7 7.9c0 3.7-3.5 6.9-8.9 11.6L12 20.5z"/></svg>';
+      }
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 20.5l-1.1-1C5.5 14.8 2 11.6 2 7.9 2 5.2 4.2 3 7 3c1.7 0 3.3.8 4.3 2.1C12.3 3.8 14 3 15.7 3 18.5 3 20.7 5.2 20.7 7.9c0 3.7-3.5 6.9-8.9 11.6L12 20.5z"/></svg>';
+    }
+
+    function favBtnHtml(type, id) {
+      const active = isFavorite(type, id);
+      return `<button type="button" class="fav-btn ${active ? 'is-active' : ''}" data-fav-type="${type}" data-fav-id="${esc(id)}" aria-label="favorite">${heartSvg(active)}</button>`;
+    }
+
+    function applyI18n() {
+      document.documentElement.lang = appMeta.lang === 'en' ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.dataset.i18n;
+        if (I18N[appMeta.lang]?.[key]) el.textContent = t(key);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.dataset.i18nPlaceholder;
+        if (I18N[appMeta.lang]?.[key]) el.placeholder = t(key);
+      });
+      document.querySelectorAll('.lang-option').forEach((btn) => {
+        btn.classList.toggle('lang-option-active', btn.dataset.lang === appMeta.lang);
+      });
+      renderKolEthnicityFilters();
+      renderFilters('filter-inspiration', 'filterInspiration', renderInspiration);
+      renderCreativeFilters();
+      renderFilters('filter-ai', 'filterAi', renderAi);
+      renderKols();
+      renderInspiration();
+      renderCreative();
+      renderAi();
+      updateUserUI();
+    }
+
+    function setLang(lang) {
+      appMeta.lang = lang === 'en' ? 'en' : 'zh';
+      saveState();
+      applyI18n();
+      document.getElementById('lang-popover').classList.add('hidden');
+    }
+
+    function updateUserUI() {
+      const loggedIn = !!appMeta.user;
+      document.getElementById('btn-login').classList.toggle('hidden', loggedIn);
+      document.getElementById('btn-avatar').classList.toggle('hidden', !loggedIn);
+      if (loggedIn) {
+        const u = appMeta.user;
+        document.getElementById('user-avatar-img').src = u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.email)}`;
+        document.getElementById('menu-nickname').textContent = u.nickname;
+        document.getElementById('menu-account-type').textContent = u.accountType === 'pro' ? t('accountTypePro') : t('accountTypeFree');
+        document.getElementById('menu-email').textContent = u.email;
+      }
+    }
+
+    function updateFavoriteButtons() {
+      document.querySelectorAll('.fav-btn').forEach((btn) => {
+        const active = isFavorite(btn.dataset.favType, btn.dataset.favId);
+        btn.classList.toggle('is-active', active);
+        btn.innerHTML = heartSvg(active);
+      });
+    }
+
+    function bindFavoriteButtons(root) {
+      root.querySelectorAll('.fav-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          toggleFavorite(btn.dataset.favType, btn.dataset.favId);
+        });
+      });
+    }
+
+    function findItemByFav(type, id) {
+      if (type === 'kol') return state.kols.find((k) => k.id === id);
+      if (type === 'ai') return state.aiModels.find((i) => i.id === id);
+      if (type === 'creative') return state.creative.find((i) => i.id === id);
+      return state.inspiration.find((i) => i.id === id);
+    }
+
+    function openFavoritesDrawer() {
+      const list = document.getElementById('favorites-list');
+      const entries = appMeta.favorites.map((key) => {
+        const [type, id] = key.split(':');
+        const item = findItemByFav(type, id);
+        if (!item) return null;
+        const image = item.image;
+        const label = item.name || item.style || item.category || '';
+        return { type, id, image, label };
+      }).filter(Boolean);
+
+      if (!entries.length) {
+        list.innerHTML = `<p class="text-center text-ink/50 py-16 text-sm">${esc(t('favoritesEmpty'))}</p>`;
+      } else {
+        list.innerHTML = `<div class="fav-grid">${entries.map((e) => `
+          <div class="fav-thumb relative cursor-pointer" data-fav-preview="${esc(e.type)}:${esc(e.id)}">
+            <img src="${esc(e.image)}" alt="${esc(e.label)}" loading="lazy"/>
+            <button type="button" class="fav-btn is-active" data-fav-type="${esc(e.type)}" data-fav-id="${esc(e.id)}" style="opacity:1">${heartSvg(true)}</button>
+          </div>`).join('')}</div>`;
+        bindFavoriteButtons(list);
+        list.querySelectorAll('[data-fav-preview]').forEach((el) => {
+          el.addEventListener('click', (ev) => {
+            if (ev.target.closest('.fav-btn')) return;
+            const [type, id] = el.dataset.favPreview.split(':');
+            const item = findItemByFav(type, id);
+            if (!item) return;
+            if (type === 'kol') window.open(item.account || '#', '_blank');
+            else if (type === 'ai') {
+              openLightbox({ image: item.image, category: item.category, prompt: item.prompt || item.style, tags: item.tags || buildDetailTags(item) }, true);
+            } else {
+              openLightbox({ image: item.image, category: item.category, prompt: item.style || '', tags: item.searchTags || buildCreativeSearchTags(item) }, false);
+            }
+          });
+        });
+      }
+      document.getElementById('favorites-drawer').classList.add('open');
+      document.getElementById('favorites-backdrop').classList.remove('hidden');
+    }
+
+    function closeFavoritesDrawer() {
+      document.getElementById('favorites-drawer').classList.remove('open');
+      document.getElementById('favorites-backdrop').classList.add('hidden');
+    }
+
+    function parseTagsFromString(raw) {
+      if (!raw || typeof raw !== 'string') return [];
+      return raw.split(/[,，;；\n|／/]/).map((s) => s.trim()).filter(Boolean);
+    }
+
+    function buildDetailTags(data) {
+      if (Array.isArray(data.tags) && data.tags.length) return data.tags;
+      const fromPrompt = parseTagsFromString(data.prompt || data.style || '');
+      if (fromPrompt.length) return fromPrompt.slice(0, 14);
+      return data.category ? [data.category] : [];
+    }
+
+    function buildAiPrompt(style, category) {
+      const base = style || '未标注';
+      const extras = ['high detail', 'cinematic light', 'natural skin texture'];
+      if (category && category !== '全部') extras.unshift(category);
+      return `${base}, ${extras.join(', ')}`;
+    }
+
+    function buildAiTags(style, category) {
+      const tags = parseTagsFromString(style);
+      if (category && category !== '全部' && !tags.includes(category)) tags.unshift(category);
+      const clothingHints = ['针织', '牛仔', '西装', '连衣裙', '卫衣', '衬衫', '外套', 'skirt', 'jacket', 'dress', 'sweater', 'denim'];
+      const detailHints = ['柔光', '自然光', '浅景深', '半身', '肖像', '街拍', 'portrait', 'soft light', 'bokeh'];
+      const styleLower = (style || '').toLowerCase();
+      [...clothingHints, ...detailHints].forEach((hint) => {
+        if (styleLower.includes(hint.toLowerCase()) && !tags.some((t) => t.toLowerCase().includes(hint.toLowerCase()))) {
+          tags.push(hint);
+        }
+      });
+      tags.push('高细节', '电影感光线');
+      return [...new Set(tags)].slice(0, 12);
+    }
+
+    function switchSubheader(tab) {
+      document.querySelectorAll('[id^="subheader-"]').forEach((el) => el.classList.add('hidden'));
+      const sub = document.getElementById(`subheader-${tab}`);
+      if (sub) sub.classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.main-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.main-tab').forEach((b) => b.classList.remove('tab-active'));
+        btn.classList.add('tab-active');
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.add('hidden'));
+        document.getElementById(`panel-${tab}`).classList.remove('hidden');
+        switchSubheader(tab);
+        runActiveSearchRender();
+      });
+    });
+
+    function openModal(id){const el=document.getElementById(id);el.classList.remove('hidden');el.classList.add('flex');}
+    function closeModal(id){const el=document.getElementById(id);el.classList.add('hidden');el.classList.remove('flex');}
+
+    function renderKolEthnicityFilters() {
+      const c = document.getElementById('filter-kol-ethnicity');
+      c.innerHTML = KOL_ETHNICITY.map((cat)=>`<button data-eth="${cat}" class="filter-link ${state.filterKolEthnicity===cat?'filter-link-active':''}">${esc(tEth(cat))}</button>`).join('');
+      c.querySelectorAll('[data-eth]').forEach((b)=>b.addEventListener('click',()=>{state.filterKolEthnicity=b.dataset.eth;renderKolEthnicityFilters();renderKols();}));
+    }
+
+    function renderFilters(containerId, key, onChange, categories = CATEGORIES, labelFn = tCat) {
+      const c = document.getElementById(containerId);
+      c.innerHTML = categories.map((cat)=>`<button data-cat="${cat}" class="filter-link ${state[key]===cat?'filter-link-active':''}">${esc(labelFn(cat))}</button>`).join('');
+      c.querySelectorAll('[data-cat]').forEach((b)=>b.addEventListener('click',()=>{state[key]=b.dataset.cat;onChange();renderFilters(containerId,key,onChange,categories,labelFn);}));
+    }
+
+    function renderCreativeFilters() {
+      renderFilters('filter-creative', 'filterCreative', renderCreative, CREATIVE_CATEGORIES, tCreativeCat);
+    }
+
+    function kolDisplayName(name) {
+      const n = (name || '').trim();
+      return n.startsWith('@') ? n.slice(1) : n;
+    }
+
+    function kolDescHtml(accountType) {
+      const parts = (accountType || '').split('/').map((s) => s.trim()).filter(Boolean);
+      if (!parts.length) return '';
+      return parts.map((p) => esc(p)).join('<br>');
+    }
+
+    function followersIconSvg() {
+      return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>';
+    }
+
+    function renderKols() {
+      const grid = document.getElementById('kol-grid');
+      let list = state.filterKolEthnicity === '全部' ? state.kols : state.kols.filter((k) => k.ethnicity === state.filterKolEthnicity);
+      if (state.searchQuery.trim() && getActiveTab() === 'kol') {
+        list = list.filter((k) => matchesSearch(buildKolSearchTags(k), k.name));
+      }
+      if (!list.length) {
+        const msg = state.searchQuery.trim() ? t('noSearchResults') : t('noKol');
+        grid.innerHTML = `<p class="col-span-full text-center text-ink/60 py-20">${esc(msg)}</p>`;
+        return;
+      }
+      grid.innerHTML = list.map((kol) => `<article class="kol-card w-full" data-item-type="kol" data-item-id="${kol.id}">
+        <div class="kol-image group">
+          ${favBtnHtml('kol', kol.id)}
+          <img src="${esc(kol.image)}" alt="${esc(kol.name)}" onerror="this.src='https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80'"/>
+          <div class="kol-overlay">
+            <h3 class="kol-name">${esc(kolDisplayName(kol.name))}</h3>
+            <p class="kol-desc">${kolDescHtml(kol.accountType)}</p>
+            <div class="mt-3 flex items-center justify-between gap-2">
+              <span class="kol-followers">${followersIconSvg()}<span>${esc(kol.followers || '—')}</span></span>
+              <a href="${esc(kol.account || '#')}" target="_blank" rel="noopener" class="kol-profile-btn">${esc(t('viewProfile'))}</a>
+            </div>
+          </div>
+        </div>
+      </article>`).join('');
+      bindFavoriteButtons(grid);
+    }
+
+    function editKol(id){
+      const kol=state.kols.find((k)=>k.id===id); if(!kol)return;
+      const f=document.getElementById('form-kol');
+      document.getElementById('modal-kol-title').textContent=t('editKol');
+      document.getElementById('kol-id').value=kol.id;
+      f.name.value=kol.name; f.account.value=kol.account||''; f.followers.value=kol.followers||'';
+      f.gender.value=kol.gender||'女'; f.region.value=kol.region||''; f.ethnicity.value=kol.ethnicity||'欧美白人';
+      f.accountType.value=kol.accountType||'';
+      f.searchTags.value = (kol.searchTags || []).join(', ');
+      setDropZoneImage('kol-image-data', kol.image || '');
+      openModal('modal-kol');
+    }
+
+    document.getElementById('btn-add-kol').addEventListener('click',()=>{
+      document.getElementById('modal-kol-title').textContent=t('addKol');
+      document.getElementById('kol-id').value='';
+      document.getElementById('form-kol').reset();
+      clearDropZone('kol-image-data');
+      openModal('modal-kol');
+    });
+
+    document.getElementById('form-kol').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const f=e.target; const id=document.getElementById('kol-id').value||uid('kol');
+      const imageVal = f.image.value.trim();
+      if (!imageVal) { alert(t('imageRequired')); return; }
+      const data = {
+        id, name: f.name.value.trim(), account: f.account.value.trim(), followers: f.followers.value.trim(),
+        gender: f.gender.value, region: f.region.value.trim(), ethnicity: f.ethnicity.value,
+        accountType: f.accountType.value.trim(),
+        image: imageVal,
+        searchTags: parseTagsFromString(f.searchTags?.value),
+      };
+      if (!data.searchTags.length) data.searchTags = buildKolSearchTags(data);
+      const idx = state.kols.findIndex((k) => k.id === id);
+      if (idx >= 0) state.kols[idx] = data; else state.kols.push(data);
+      saveState(); renderKols(); closeModal('modal-kol');
+    });
+
+    function renderMasonry(containerId, items, filter, mode='web') {
+      const c=document.getElementById(containerId);
+      let list=filter==='全部'?items:items.filter((i)=>i.category===filter);
+      const tab = getActiveTab();
+      if (state.searchQuery.trim()) {
+        if (mode === 'web' && tab === 'inspiration') {
+          list = list.filter((i) => matchesSearch(buildInspirationSearchTags(i), i.style));
+        } else if (mode === 'creative' && tab === 'creative') {
+          list = list.filter((i) => matchesSearch(buildCreativeSearchTags(i), i.style));
+        } else if (mode === 'ai' && tab === 'ai-models') {
+          list = list.filter((i) => matchesSearch(buildAiSearchTags(i), i.prompt || i.style));
+        }
+      }
+      if(!list.length){
+        const searching = state.searchQuery.trim() && (
+          (mode === 'web' && tab === 'inspiration') ||
+          (mode === 'creative' && tab === 'creative') ||
+          (mode === 'ai' && tab === 'ai-models')
+        );
+        const msg = searching ? t('noSearchResults') : t('noContent');
+        c.innerHTML=`<p class="text-center text-ink/60 py-20">${esc(msg)}</p>`;return;
+      }
+      c.innerHTML=list.map((item)=>{
+        const payload=JSON.stringify({
+          image: item.image,
+          category: item.category,
+          prompt: item.prompt || item.style || '',
+          tags: item.tags || buildDetailTags(item),
+        }).replace(/'/g,'&#39;');
+        return `<div class="masonry-item cursor-pointer" data-lightbox='${payload}' data-mode="${mode}" data-item-type="${mode}" data-item-id="${item.id}">
+          <div class="media-card rounded-[20px] relative group">
+            ${favBtnHtml(mode, item.id)}
+            <img src="${esc(item.image)}" alt="" class="w-full h-auto block" loading="lazy"/>
+          </div>
+        </div>`;
+      }).join('');
+      bindFavoriteButtons(c);
+      c.querySelectorAll('[data-lightbox]').forEach((card)=>card.addEventListener('click',(e)=>{
+        if (e.target.closest('.fav-btn')) return;
+        const data=JSON.parse(card.dataset.lightbox.replace(/&#39;/g,"'"));
+        openLightbox(data, card.dataset.mode==='ai');
+      }));
+    }
+
+    function renderInspiration(){renderMasonry('inspiration-masonry',state.inspiration,state.filterInspiration,'web');}
+    function renderCreative(){renderMasonry('creative-masonry',state.creative,state.filterCreative,'creative');}
+    function renderAi(){renderMasonry('ai-masonry',state.aiModels,state.filterAi,'ai');}
+
+    function renderLightboxTags(containerId, tags) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = tags.map((t) => `<span class="lightbox-tag">${esc(t)}</span>`).join('');
+    }
+
+    function openLightbox(data, isAi) {
+      document.getElementById('lightbox-img').src = data.image;
+      const sidebar = document.getElementById('lightbox-sidebar');
+      const sidebarMobile = document.getElementById('lightbox-sidebar-mobile');
+      const inner = document.getElementById('lightbox-inner');
+
+      if (isAi) {
+        const promptText = data.prompt || t('noPrompt');
+        const tags = buildDetailTags(data);
+        document.getElementById('lightbox-prompt').textContent = promptText;
+        document.getElementById('lightbox-prompt-mobile').textContent = promptText;
+        renderLightboxTags('lightbox-tags', tags);
+        renderLightboxTags('lightbox-tags-mobile', tags);
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('md:flex');
+        sidebarMobile.classList.remove('hidden');
+        sidebarMobile.classList.add('flex');
+        inner.classList.add('md:flex-row');
+        inner.classList.remove('max-w-5xl');
+        inner.classList.add('max-w-6xl');
+      } else {
+        sidebar.classList.add('hidden');
+        sidebar.classList.remove('md:flex');
+        sidebarMobile.classList.add('hidden');
+        sidebarMobile.classList.remove('flex');
+        document.getElementById('lightbox-prompt').textContent = '';
+        document.getElementById('lightbox-prompt-mobile').textContent = '';
+        document.getElementById('lightbox-tags').innerHTML = '';
+        document.getElementById('lightbox-tags-mobile').innerHTML = '';
+        inner.classList.remove('md:flex-row');
+        inner.classList.add('max-w-5xl');
+        inner.classList.remove('max-w-6xl');
+      }
+
+      const lb = document.getElementById('lightbox');
+      lb.classList.remove('hidden');
+      lb.classList.add('flex');
+    }
+    function closeLightbox(){const lb=document.getElementById('lightbox');lb.classList.add('hidden');lb.classList.remove('flex');}
+    document.getElementById('lightbox-close').addEventListener('click',closeLightbox);
+    document.getElementById('lightbox').addEventListener('click',(e)=>{if(e.target.id==='lightbox')closeLightbox();});
+
+    const contextMenu = document.getElementById('context-menu');
+    const contextDeleteBtn = document.getElementById('context-delete-btn');
+    let contextTarget = null;
+
+    function hideContextMenu() {
+      contextMenu.classList.add('hidden');
+      contextTarget = null;
+    }
+
+    function handleDeleteByContext(type, id) {
+      if (!confirm(t('confirmDelete'))) return;
+      if (type === 'kol') {
+        state.kols = state.kols.filter((k) => k.id !== id);
+        saveState();
+        renderKols();
+        return;
+      }
+      if (type === 'ai') {
+        state.aiModels = state.aiModels.filter((i) => i.id !== id);
+        saveState();
+        renderAi();
+        return;
+      }
+      if (type === 'creative') {
+        state.creative = state.creative.filter((i) => i.id !== id);
+        saveState();
+        renderCreative();
+        return;
+      }
+      if (type === 'web' || type === 'inspiration') {
+        state.inspiration = state.inspiration.filter((i) => i.id !== id);
+        saveState();
+        renderInspiration();
+        return;
+      }
+    }
+
+    document.addEventListener('contextmenu', (e) => {
+      const target = e.target.closest('[data-item-type][data-item-id]');
+      if (!target) {
+        hideContextMenu();
+        return;
+      }
+      e.preventDefault();
+      contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
+      contextMenu.classList.remove('hidden');
+      const menuWidth = 152;
+      const menuHeight = 44;
+      const left = Math.min(e.clientX, window.innerWidth - menuWidth - 8);
+      const top = Math.min(e.clientY, window.innerHeight - menuHeight - 8);
+      contextMenu.style.left = `${left}px`;
+      contextMenu.style.top = `${top}px`;
+    });
+
+    contextDeleteBtn.addEventListener('click', () => {
+      if (!contextTarget) return;
+      const { type, id } = contextTarget;
+      hideContextMenu();
+      handleDeleteByContext(type, id);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#context-menu')) hideContextMenu();
+    });
+
+    function populateGalleryCategories(type) {
+      const categorySelect = document.getElementById('gallery-category-select');
+      const categories = type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES;
+      const labelFn = type === 'creative' ? tCreativeCat : tCat;
+      categorySelect.innerHTML = '';
+      categories.filter((c) => c !== '全部').forEach((c) => {
+        const o = document.createElement('option');
+        o.value = c;
+        o.textContent = labelFn(c);
+        categorySelect.appendChild(o);
+      });
+    }
+
+    function openGalleryModal(type) {
+      document.getElementById('gallery-type').value = type;
+      const titles = { inspiration: t('addWeb'), creative: t('addCreative'), ai: t('addAi') };
+      document.getElementById('modal-gallery-title').textContent = titles[type] || t('addWeb');
+      document.getElementById('gallery-tags-field').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-web-tags-field').classList.toggle('hidden', type === 'ai');
+      populateGalleryCategories(type);
+      document.getElementById('form-gallery').reset();
+      clearDropZone('gallery-image-data');
+      openModal('modal-gallery');
+    }
+    document.getElementById('btn-add-inspiration').addEventListener('click',()=>openGalleryModal('inspiration'));
+    document.getElementById('btn-add-creative').addEventListener('click',()=>openGalleryModal('creative'));
+    document.getElementById('btn-add-ai').addEventListener('click',()=>openGalleryModal('ai'));
+
+    document.getElementById('form-gallery').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const f=e.target; const type=document.getElementById('gallery-type').value;
+      const imageVal = f.image.value.trim();
+      if (!imageVal) { alert(t('imageRequired')); return; }
+      const styleVal = f.style.value.trim() || '未标注';
+      const item = {
+        id: uid(type === 'inspiration' ? 'insp' : type === 'creative' ? 'creative' : 'ai'),
+        image: imageVal,
+        category: f.category.value,
+        style: styleVal,
+        prompt: styleVal,
+        tags: undefined,
+      };
+      if (type === 'ai') {
+        item.prompt = buildAiPrompt(styleVal, f.category.value);
+        const manualTags = parseTagsFromString(f.tags?.value);
+        item.tags = manualTags.length ? manualTags : buildAiTags(styleVal, f.category.value);
+      }
+      if (type === 'inspiration') {
+        const webTags = parseTagsFromString(f.searchTags?.value);
+        item.searchTags = webTags.length ? webTags : buildInspirationSearchTags(item);
+        state.inspiration.unshift(item);
+        renderInspiration();
+      } else if (type === 'creative') {
+        const creativeTags = parseTagsFromString(f.searchTags?.value);
+        item.searchTags = creativeTags.length ? creativeTags : buildCreativeSearchTags(item);
+        state.creative.unshift(item);
+        renderCreative();
+      } else { state.aiModels.unshift(item); renderAi(); }
+      saveState(); closeModal('modal-gallery');
+    });
+
+    const globalSearch = document.getElementById('global-search');
+    globalSearch.addEventListener('input', () => {
+      state.searchQuery = globalSearch.value;
+      saveState();
+      runActiveSearchRender();
+    });
+    globalSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { globalSearch.value = ''; state.searchQuery = ''; saveState(); runActiveSearchRender(); }
+    });
+    document.getElementById('btn-search-mobile').addEventListener('click', () => {
+      const q = prompt(t('searchPlaceholder'), state.searchQuery);
+      if (q === null) return;
+      state.searchQuery = q;
+      globalSearch.value = q;
+      saveState();
+      runActiveSearchRender();
+    });
+
+    document.getElementById('btn-lang').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('lang-popover').classList.toggle('hidden');
+      document.getElementById('user-menu').classList.add('hidden');
+    });
+    document.querySelectorAll('.lang-option').forEach((btn) => {
+      btn.addEventListener('click', () => setLang(btn.dataset.lang));
+    });
+
+    document.getElementById('btn-favorites-open').addEventListener('click', () => openFavoritesDrawer());
+    document.getElementById('favorites-close').addEventListener('click', closeFavoritesDrawer);
+    document.getElementById('favorites-backdrop').addEventListener('click', closeFavoritesDrawer);
+    document.getElementById('menu-my-favorites').addEventListener('click', () => {
+      document.getElementById('user-menu').classList.add('hidden');
+      openFavoritesDrawer();
+    });
+
+    document.getElementById('btn-login').addEventListener('click', () => {
+      appMeta.authMode = 'login';
+      document.getElementById('auth-modal-title').textContent = t('login');
+      document.getElementById('btn-switch-register').textContent = t('switchRegister');
+      openModal('modal-auth');
+    });
+    document.getElementById('btn-avatar').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('user-menu').classList.toggle('hidden');
+      document.getElementById('lang-popover').classList.add('hidden');
+    });
+    document.getElementById('btn-switch-register').addEventListener('click', () => {
+      appMeta.authMode = appMeta.authMode === 'login' ? 'register' : 'login';
+      const isReg = appMeta.authMode === 'register';
+      document.getElementById('auth-modal-title').textContent = isReg ? t('register') : t('login');
+      document.getElementById('btn-switch-register').textContent = isReg ? t('switchLogin') : t('switchRegister');
+    });
+    document.getElementById('form-auth').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = e.target;
+      appMeta.user = {
+        nickname: f.nickname.value.trim() || 'Pixel User',
+        email: f.email.value.trim(),
+        accountType: 'pro',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(f.email.value.trim())}`,
+      };
+      saveState();
+      updateUserUI();
+      closeModal('modal-auth');
+    });
+    document.getElementById('menu-logout').addEventListener('click', () => {
+      appMeta.user = null;
+      saveState();
+      updateUserUI();
+      document.getElementById('user-menu').classList.add('hidden');
+    });
+    document.querySelector('[data-i18n="settings"]').addEventListener('click', () => {
+      alert(t('settingsSoon'));
+      document.getElementById('user-menu').classList.add('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#user-area')) document.getElementById('user-menu').classList.add('hidden');
+      if (!e.target.closest('#btn-lang') && !e.target.closest('#lang-popover')) document.getElementById('lang-popover').classList.add('hidden');
+    });
+
+    ['modal-kol', 'modal-gallery', 'modal-auth'].forEach((id) => {
+      const m = document.getElementById(id);
+      if (m) m.addEventListener('click', (e) => { if (e.target === m) closeModal(id); });
+    });
+    document.querySelectorAll('.modal-close').forEach((b) => {
+      if (!b.dataset.modal) return;
+      b.addEventListener('click', () => closeModal(b.dataset.modal));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeModal('modal-kol');
+        closeModal('modal-gallery');
+        closeModal('modal-auth');
+        closeFavoritesDrawer();
+        document.getElementById('user-menu').classList.add('hidden');
+        document.getElementById('lang-popover').classList.add('hidden');
+      }
+    });
+
+    initImageDropZones();
+    loadState();
+    switchSubheader('kol');
+    document.getElementById('global-search').value = state.searchQuery || '';
+    applyI18n();
+  </script>
+</body>
+</html>
