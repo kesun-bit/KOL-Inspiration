@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pixelpose</title>
+  <title>CreatorLook</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -431,7 +432,7 @@
   <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur-xl border-b border-line">
     <div class="page-shell header-top-row h-[80px]">
       <div class="flex items-center justify-start min-w-0">
-        <img src="file:///Users/keisun/.cursor/projects/Users-keisun-Desktop-KOL-Inspiration/assets/___1-e035360a-08ab-42f8-befc-f9923924bf51.png" alt="Pixelpose Logo" class="h-[52px] w-auto object-contain shrink-0" />
+        <img src="assets/logo.png" alt="Pixelpose Logo" class="h-[58px] w-auto object-contain shrink-0" />
       </div>
       <nav id="main-tabs" class="tab-segment header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
         <button data-tab="kol" class="main-tab tab-active" role="tab" data-i18n="tabKol">KOL</button>
@@ -647,15 +648,29 @@
           <input name="email" required type="email" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="you@email.com" /></label>
         <label class="block text-sm"><span data-i18n="password">密码</span>
           <input name="password" required type="password" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="••••••" /></label>
-        <p class="text-xs text-ink/50" data-i18n="authHint">演示模式：填写信息即可本地登录</p>
+        <p class="text-xs text-ink/50" data-i18n="authHint">使用邮箱注册/登录后可上传与删除</p>
         <button type="submit" class="btn-godly btn-godly-primary w-full" data-i18n="login">登录</button>
         <button type="button" id="btn-switch-register" class="btn-godly w-full" data-i18n="switchRegister">没有账号？注册</button>
       </form>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script>
     const STORAGE_KEY = 'kol-inspiration-app-v2';
+    const POST_CATEGORIES = {
+      kol: 'kol',
+      inspiration: 'net_model',
+      ai: 'ai_model',
+      creative: 'inspiration',
+    };
+    const CATEGORY_TO_TAB = {
+      kol: 'kol',
+      net_model: 'inspiration',
+      ai_model: 'ai',
+      inspiration: 'creative',
+    };
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
@@ -666,7 +681,9 @@
         tabKol: 'KOL', tabInspiration: '网图模特', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
         addCreative: '添加灵感',
         loginRegister: '登录/注册', login: '登录', register: '注册', switchRegister: '没有账号？注册', switchLogin: '已有账号？登录',
-        nickname: '昵称', email: '邮箱', password: '密码', authHint: '演示模式：填写信息即可本地登录',
+        nickname: '昵称', email: '邮箱', password: '密码', authHint: '使用邮箱注册/登录后可上传与删除',
+        authRequired: '请先登录', saving: '保存中…', loadFailed: '加载数据失败，请检查 Supabase 配置',
+        configMissing: '未配置 Supabase：请在 Vercel 设置 NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 并重新部署',
         myFavorites: '我的收藏', settings: '设置', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', delete: '删除',
         addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
@@ -689,7 +706,9 @@
         tabKol: 'KOL', tabInspiration: 'Web Model', tabCreative: 'Creative', tabAi: 'AI Model', upload: 'Upload',
         addCreative: 'Add creative',
         loginRegister: 'Log in / Sign up', login: 'Log in', register: 'Sign up', switchRegister: 'No account? Sign up', switchLogin: 'Have an account? Log in',
-        nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Demo: enter info to sign in locally',
+        nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Sign in with email to upload or delete',
+        authRequired: 'Please sign in first', saving: 'Saving…', loadFailed: 'Failed to load data. Check Supabase config.',
+        configMissing: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL / ANON_KEY on Vercel and redeploy.',
         myFavorites: 'My Favorites', settings: 'Settings', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', delete: 'Delete',
         addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
@@ -723,6 +742,10 @@
     };
 
     let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login' };
+    let supabaseClient = null;
+    let authSession = null;
+    let realtimeChannel = null;
+    const pendingFiles = { 'kol-image-data': null, 'gallery-image-data': null };
 
     const UNSPLASH_IMAGES = [
       { id: 'u1', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&q=80', category: '美颜类', style: '清透自然' },
@@ -891,63 +914,238 @@
     function tEth(eth) { return t(ETH_I18N_KEYS[eth] || 'ethAll'); }
     function favKey(type, id) { return `${type}:${id}`; }
 
-    function loadState() {
+    function loadMeta() {
       let raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) raw = localStorage.getItem(STORAGE_KEY_LEGACY);
       try {
         if (raw) {
           const parsed = JSON.parse(raw);
           appMeta.lang = parsed.lang === 'en' ? 'en' : 'zh';
-          appMeta.user = parsed.user || null;
           appMeta.favorites = Array.isArray(parsed.favorites) ? parsed.favorites : [];
           state.searchQuery = parsed.searchQuery || '';
-          state.kols = migrateKols(parsed.kols);
-          state.inspiration = (parsed.inspiration || []).map(migrateInspirationItem);
-          state.creative = (parsed.creative || []).map(migrateCreativeItem);
-          state.aiModels = (parsed.aiModels || []).map((i) => ({
-            ...i,
-            prompt: i.prompt || i.style || t('noPrompt'),
-            tags: Array.isArray(i.tags) ? i.tags : buildAiTags(i.style, i.category),
-          }));
-          if (state.kols.length < 8) state.kols = [...DEFAULT_KOLS];
-          if (state.inspiration.length < 30) {
-            state.inspiration = UNSPLASH_IMAGES.map((i) => migrateInspirationItem({ ...i, id: `insp-${i.id}` }));
-          }
-          if (!state.creative.length) {
-            state.creative = CREATIVE_MOCK.map((i) => migrateCreativeItem({ ...i, id: `creative-${i.id}` }));
-          }
           document.getElementById('global-search').value = state.searchQuery;
-          return;
         }
-      } catch (e) { console.warn('load failed', e); }
-      state.kols = DEFAULT_KOLS.map(migrateKolItem);
-      state.inspiration = UNSPLASH_IMAGES.map((i) => migrateInspirationItem({ ...i, id: `insp-${i.id}` }));
-      state.creative = CREATIVE_MOCK.map((i) => migrateCreativeItem({ ...i, id: `creative-${i.id}` }));
-      state.aiModels = UNSPLASH_IMAGES.map((i) => ({
-        ...i,
-        id: `ai-${i.id}`,
-        prompt: buildAiPrompt(i.style, i.category),
-        tags: buildAiTags(i.style, i.category),
-      }));
-      saveState();
+      } catch (e) { console.warn('load meta failed', e); }
     }
 
-    function saveState() {
+    function saveMeta() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          kols: state.kols,
-          inspiration: state.inspiration,
-          creative: state.creative,
-          aiModels: state.aiModels,
-          searchQuery: state.searchQuery,
           lang: appMeta.lang,
-          user: appMeta.user,
           favorites: appMeta.favorites,
+          searchQuery: state.searchQuery,
         }));
-      } catch (e) {
-        console.warn('save failed', e);
-        alert(appMeta.lang === 'en' ? 'Storage full. Try removing some uploaded images.' : '本地存储空间不足，请删除部分已上传的图片后重试。');
+      } catch (e) { console.warn('save meta failed', e); }
+    }
+
+    function getSupabaseConfig() {
+      return window.CREATORLOOK_CONFIG || {};
+    }
+
+    function initSupabaseClient() {
+      const cfg = getSupabaseConfig();
+      if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+        console.warn(t('configMissing'));
+        return false;
       }
+      supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      });
+      return true;
+    }
+
+    function onAuthSession(session) {
+      authSession = session;
+      if (session?.user) {
+        const meta = session.user.user_metadata || {};
+        appMeta.user = {
+          email: session.user.email || '',
+          nickname: meta.nickname || session.user.email?.split('@')[0] || 'User',
+          accountType: 'pro',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || session.user.id)}`,
+        };
+      } else {
+        appMeta.user = null;
+      }
+      updateUserUI();
+    }
+
+    async function initAuth() {
+      if (!supabaseClient) return;
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      onAuthSession(session);
+      supabaseClient.auth.onAuthStateChange((_event, session) => onAuthSession(session));
+    }
+
+    function requireAuth() {
+      if (authSession) return true;
+      alert(t('authRequired'));
+      appMeta.authMode = 'login';
+      document.getElementById('auth-modal-title').textContent = t('login');
+      openModal('modal-auth');
+      return false;
+    }
+
+    function postToKol(row) {
+      const m = row.metadata || {};
+      const kol = {
+        id: row.id,
+        name: row.title || '',
+        followers: row.fans || '',
+        account: m.account || '',
+        gender: m.gender || '女',
+        region: m.region || '',
+        ethnicity: m.ethnicity || '欧美白人',
+        accountType: m.accountType || '',
+        image: row.image_url,
+        storagePath: row.storage_path || '',
+        searchTags: Array.isArray(m.searchTags) ? m.searchTags : [],
+      };
+      if (!kol.searchTags.length) kol.searchTags = buildKolSearchTags(kol);
+      return kol;
+    }
+
+    function postToMedia(row) {
+      const m = row.metadata || {};
+      const item = {
+        id: row.id,
+        image: row.image_url,
+        category: m.subcategory || m.category || '美颜类',
+        style: m.style || '',
+        prompt: m.prompt || m.style || '',
+        tags: Array.isArray(m.tags) ? m.tags : [],
+        searchTags: Array.isArray(m.searchTags) ? m.searchTags : [],
+        storagePath: row.storage_path || '',
+      };
+      if (row.category === 'net_model' && !item.searchTags.length) item.searchTags = buildInspirationSearchTags(item);
+      if (row.category === 'inspiration' && !item.searchTags.length) item.searchTags = buildCreativeSearchTags(item);
+      if (row.category === 'ai_model') {
+        item.prompt = item.prompt || buildAiPrompt(item.style, item.category);
+        if (!item.tags.length) item.tags = buildAiTags(item.style, item.category);
+      }
+      return item;
+    }
+
+    function applyPostsToState(rows) {
+      state.kols = [];
+      state.inspiration = [];
+      state.aiModels = [];
+      state.creative = [];
+      (rows || []).forEach((row) => {
+        if (row.category === 'kol') state.kols.push(postToKol(row));
+        else if (row.category === 'net_model') state.inspiration.push(postToMedia(row));
+        else if (row.category === 'ai_model') state.aiModels.push(postToMedia(row));
+        else if (row.category === 'inspiration') state.creative.push(postToMedia(row));
+      });
+    }
+
+    async function fetchAllPosts() {
+      if (!supabaseClient) return;
+      const { data, error } = await supabaseClient
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      applyPostsToState(data || []);
+    }
+
+    async function uploadImageToStorage(file, category) {
+      const cfg = getSupabaseConfig();
+      const bucket = cfg.STORAGE_BUCKET || 'creator_bucket';
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const uid = user?.id || 'anonymous';
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/gi, '') || 'jpg';
+      const path = `${category}/${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from(bucket)
+        .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+      return { imageUrl: data.publicUrl, storagePath: path };
+    }
+
+    async function deleteStorageFile(storagePath) {
+      if (!storagePath) return;
+      const cfg = getSupabaseConfig();
+      const bucket = cfg.STORAGE_BUCKET || 'creator_bucket';
+      const { error } = await supabaseClient.storage.from(bucket).remove([storagePath]);
+      if (error) console.warn('storage delete', error);
+    }
+
+    async function insertPost({ category, title, fans, imageUrl, storagePath, metadata }) {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const { error } = await supabaseClient.from('posts').insert({
+        category,
+        title: title || null,
+        fans: fans || null,
+        image_url: imageUrl,
+        storage_path: storagePath,
+        metadata: metadata || {},
+        created_by: user?.id || null,
+      });
+      if (error) throw error;
+    }
+
+    async function deletePostById(id, storagePath) {
+      const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+      if (error) throw error;
+      await deleteStorageFile(storagePath);
+    }
+
+    function removePostFromState(category, id) {
+      if (category === 'kol') state.kols = state.kols.filter((k) => k.id !== id);
+      else if (category === 'net_model') state.inspiration = state.inspiration.filter((i) => i.id !== id);
+      else if (category === 'ai_model') state.aiModels = state.aiModels.filter((i) => i.id !== id);
+      else if (category === 'inspiration') state.creative = state.creative.filter((i) => i.id !== id);
+    }
+
+    function addPostToState(row) {
+      if (!row?.id) return;
+      if (state.kols.some((k) => k.id === row.id) || state.inspiration.some((i) => i.id === row.id)
+        || state.aiModels.some((i) => i.id === row.id) || state.creative.some((i) => i.id === row.id)) return;
+      if (row.category === 'kol') state.kols.unshift(postToKol(row));
+      else if (row.category === 'net_model') state.inspiration.unshift(postToMedia(row));
+      else if (row.category === 'ai_model') state.aiModels.unshift(postToMedia(row));
+      else if (row.category === 'inspiration') state.creative.unshift(postToMedia(row));
+    }
+
+    function renderByCategory(category) {
+      if (category === 'kol') renderKols();
+      else if (category === 'net_model') renderInspiration();
+      else if (category === 'ai_model') renderAi();
+      else if (category === 'inspiration') renderCreative();
+    }
+
+    function subscribePostsRealtime() {
+      if (!supabaseClient || realtimeChannel) return;
+      realtimeChannel = supabaseClient
+        .channel('creatorlook-posts')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+          addPostToState(payload.new);
+          renderByCategory(payload.new.category);
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
+          const cat = payload.old?.category;
+          const id = payload.old?.id;
+          if (!id) return;
+          removePostFromState(cat, id);
+          renderByCategory(cat);
+        })
+        .subscribe();
+    }
+
+    function findItemWithStorage(type, id) {
+      if (type === 'kol') return state.kols.find((k) => k.id === id);
+      if (type === 'ai') return state.aiModels.find((i) => i.id === id);
+      if (type === 'creative') return state.creative.find((i) => i.id === id);
+      return state.inspiration.find((i) => i.id === id);
+    }
+
+    function uiTypeToPostCategory(type) {
+      if (type === 'kol') return 'kol';
+      if (type === 'ai') return 'ai_model';
+      if (type === 'creative') return 'inspiration';
+      return 'net_model';
     }
 
     function esc(s) { const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
@@ -979,6 +1177,7 @@
       const zone = getDropZone(inputId);
       if (!input || !zone) return;
       input.value = '';
+      pendingFiles[inputId] = null;
       const preview = zone.querySelector('.drop-zone-preview');
       preview.removeAttribute('src');
       zone.classList.remove('has-image', 'is-dragover');
@@ -1023,6 +1222,7 @@
       const prevHint = hint?.textContent;
       if (hint) hint.textContent = t('imageProcessing');
       try {
+        pendingFiles[inputId] = file;
         const dataUrl = await compressImageFile(file);
         setDropZoneImage(inputId, dataUrl);
       } catch (err) {
@@ -1097,7 +1297,7 @@
       const idx = appMeta.favorites.indexOf(key);
       if (idx >= 0) appMeta.favorites.splice(idx, 1);
       else appMeta.favorites.push(key);
-      saveState();
+      saveMeta();
       updateFavoriteButtons();
     }
 
@@ -1139,15 +1339,23 @@
 
     function setLang(lang) {
       appMeta.lang = lang === 'en' ? 'en' : 'zh';
-      saveState();
+      saveMeta();
       applyI18n();
       document.getElementById('lang-popover').classList.add('hidden');
+    }
+
+    function toggleUploadButtons(loggedIn) {
+      ['btn-add-kol', 'btn-add-inspiration', 'btn-add-creative', 'btn-add-ai'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', !loggedIn);
+      });
     }
 
     function updateUserUI() {
       const loggedIn = !!appMeta.user;
       document.getElementById('btn-login').classList.toggle('hidden', loggedIn);
       document.getElementById('btn-avatar').classList.toggle('hidden', !loggedIn);
+      toggleUploadButtons(loggedIn);
       if (loggedIn) {
         const u = appMeta.user;
         document.getElementById('user-avatar-img').src = u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.email)}`;
@@ -1354,6 +1562,7 @@
     }
 
     document.getElementById('btn-add-kol').addEventListener('click',()=>{
+      if (!requireAuth()) return;
       document.getElementById('modal-kol-title').textContent=t('addKol');
       document.getElementById('kol-id').value='';
       document.getElementById('form-kol').reset();
@@ -1361,22 +1570,49 @@
       openModal('modal-kol');
     });
 
-    document.getElementById('form-kol').addEventListener('submit',(e)=>{
+    document.getElementById('form-kol').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const f=e.target; const id=document.getElementById('kol-id').value||uid('kol');
-      const imageVal = f.image.value.trim();
-      if (!imageVal) { alert(t('imageRequired')); return; }
-      const data = {
-        id, name: f.name.value.trim(), account: f.account.value.trim(), followers: f.followers.value.trim(),
-        gender: f.gender.value, region: f.region.value.trim(), ethnicity: f.ethnicity.value,
-        accountType: f.accountType.value.trim(),
-        image: imageVal,
-        searchTags: parseTagsFromString(f.searchTags?.value),
-      };
-      if (!data.searchTags.length) data.searchTags = buildKolSearchTags(data);
-      const idx = state.kols.findIndex((k) => k.id === id);
-      if (idx >= 0) state.kols[idx] = data; else state.kols.push(data);
-      saveState(); renderKols(); closeModal('modal-kol');
+      if (!requireAuth() || !supabaseClient) return;
+      const f = e.target;
+      const file = pendingFiles['kol-image-data'];
+      if (!file) { alert(t('imageRequired')); return; }
+      const submitBtn = f.querySelector('button[type="submit"]');
+      const prevLabel = submitBtn?.textContent;
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
+      try {
+        const { imageUrl, storagePath } = await uploadImageToStorage(file, POST_CATEGORIES.kol);
+        const searchTags = parseTagsFromString(f.searchTags?.value);
+        const metadata = {
+          account: f.account.value.trim(),
+          gender: f.gender.value,
+          region: f.region.value.trim(),
+          ethnicity: f.ethnicity.value,
+          accountType: f.accountType.value.trim(),
+          searchTags: searchTags.length ? searchTags : buildKolSearchTags({
+            name: f.name.value.trim(),
+            accountType: f.accountType.value.trim(),
+            ethnicity: f.ethnicity.value,
+            gender: f.gender.value,
+            region: f.region.value.trim(),
+            followers: f.followers.value.trim(),
+          }),
+        };
+        await insertPost({
+          category: POST_CATEGORIES.kol,
+          title: f.name.value.trim(),
+          fans: f.followers.value.trim(),
+          imageUrl,
+          storagePath,
+          metadata,
+        });
+        closeModal('modal-kol');
+        clearDropZone('kol-image-data');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('save'); }
+      }
     });
 
     function renderMasonry(containerId, items, filter, mode='web') {
@@ -1483,31 +1719,17 @@
       contextTarget = null;
     }
 
-    function handleDeleteByContext(type, id) {
+    async function handleDeleteByContext(type, id) {
+      if (!requireAuth() || !supabaseClient) return;
       if (!confirm(t('confirmDelete'))) return;
-      if (type === 'kol') {
-        state.kols = state.kols.filter((k) => k.id !== id);
-        saveState();
-        renderKols();
-        return;
-      }
-      if (type === 'ai') {
-        state.aiModels = state.aiModels.filter((i) => i.id !== id);
-        saveState();
-        renderAi();
-        return;
-      }
-      if (type === 'creative') {
-        state.creative = state.creative.filter((i) => i.id !== id);
-        saveState();
-        renderCreative();
-        return;
-      }
-      if (type === 'web' || type === 'inspiration') {
-        state.inspiration = state.inspiration.filter((i) => i.id !== id);
-        saveState();
-        renderInspiration();
-        return;
+      const item = findItemWithStorage(type, id);
+      if (!item) return;
+      const postCategory = uiTypeToPostCategory(type);
+      try {
+        await deletePostById(id, item.storagePath);
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
       }
     }
 
@@ -1563,58 +1785,71 @@
       clearDropZone('gallery-image-data');
       openModal('modal-gallery');
     }
-    document.getElementById('btn-add-inspiration').addEventListener('click',()=>openGalleryModal('inspiration'));
-    document.getElementById('btn-add-creative').addEventListener('click',()=>openGalleryModal('creative'));
-    document.getElementById('btn-add-ai').addEventListener('click',()=>openGalleryModal('ai'));
+    document.getElementById('btn-add-inspiration').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('inspiration'); });
+    document.getElementById('btn-add-creative').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('creative'); });
+    document.getElementById('btn-add-ai').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('ai'); });
 
-    document.getElementById('form-gallery').addEventListener('submit',(e)=>{
+    document.getElementById('form-gallery').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const f=e.target; const type=document.getElementById('gallery-type').value;
-      const imageVal = f.image.value.trim();
-      if (!imageVal) { alert(t('imageRequired')); return; }
+      if (!requireAuth() || !supabaseClient) return;
+      const f = e.target;
+      const type = document.getElementById('gallery-type').value;
+      const postCategory = POST_CATEGORIES[type];
+      const file = pendingFiles['gallery-image-data'];
+      if (!file) { alert(t('imageRequired')); return; }
       const styleVal = f.style.value.trim() || '未标注';
-      const item = {
-        id: uid(type === 'inspiration' ? 'insp' : type === 'creative' ? 'creative' : 'ai'),
-        image: imageVal,
-        category: f.category.value,
-        style: styleVal,
-        prompt: styleVal,
-        tags: undefined,
-      };
-      if (type === 'ai') {
-        item.prompt = buildAiPrompt(styleVal, f.category.value);
-        const manualTags = parseTagsFromString(f.tags?.value);
-        item.tags = manualTags.length ? manualTags : buildAiTags(styleVal, f.category.value);
+      const submitBtn = f.querySelector('button[type="submit"]');
+      const prevLabel = submitBtn?.textContent;
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
+      try {
+        const { imageUrl, storagePath } = await uploadImageToStorage(file, postCategory);
+        const metadata = {
+          subcategory: f.category.value,
+          style: styleVal,
+        };
+        if (type === 'ai') {
+          metadata.prompt = buildAiPrompt(styleVal, f.category.value);
+          const manualTags = parseTagsFromString(f.tags?.value);
+          metadata.tags = manualTags.length ? manualTags : buildAiTags(styleVal, f.category.value);
+        } else {
+          const webTags = parseTagsFromString(f.searchTags?.value);
+          metadata.searchTags = webTags.length ? webTags : (type === 'creative'
+            ? buildCreativeSearchTags({ category: f.category.value, style: styleVal })
+            : buildInspirationSearchTags({ category: f.category.value, style: styleVal }));
+        }
+        await insertPost({
+          category: postCategory,
+          title: styleVal,
+          fans: null,
+          imageUrl,
+          storagePath,
+          metadata,
+        });
+        closeModal('modal-gallery');
+        clearDropZone('gallery-image-data');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('save'); }
       }
-      if (type === 'inspiration') {
-        const webTags = parseTagsFromString(f.searchTags?.value);
-        item.searchTags = webTags.length ? webTags : buildInspirationSearchTags(item);
-        state.inspiration.unshift(item);
-        renderInspiration();
-      } else if (type === 'creative') {
-        const creativeTags = parseTagsFromString(f.searchTags?.value);
-        item.searchTags = creativeTags.length ? creativeTags : buildCreativeSearchTags(item);
-        state.creative.unshift(item);
-        renderCreative();
-      } else { state.aiModels.unshift(item); renderAi(); }
-      saveState(); closeModal('modal-gallery');
     });
 
     const globalSearch = document.getElementById('global-search');
     globalSearch.addEventListener('input', () => {
       state.searchQuery = globalSearch.value;
-      saveState();
+      saveMeta();
       runActiveSearchRender();
     });
     globalSearch.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { globalSearch.value = ''; state.searchQuery = ''; saveState(); runActiveSearchRender(); }
+      if (e.key === 'Escape') { globalSearch.value = ''; state.searchQuery = ''; saveMeta(); runActiveSearchRender(); }
     });
     document.getElementById('btn-search-mobile').addEventListener('click', () => {
       const q = prompt(t('searchPlaceholder'), state.searchQuery);
       if (q === null) return;
       state.searchQuery = q;
       globalSearch.value = q;
-      saveState();
+      saveMeta();
       runActiveSearchRender();
     });
 
@@ -1652,23 +1887,34 @@
       document.getElementById('auth-modal-title').textContent = isReg ? t('register') : t('login');
       document.getElementById('btn-switch-register').textContent = isReg ? t('switchLogin') : t('switchRegister');
     });
-    document.getElementById('form-auth').addEventListener('submit', (e) => {
+    document.getElementById('form-auth').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!supabaseClient) { alert(t('configMissing')); return; }
       const f = e.target;
-      appMeta.user = {
-        nickname: f.nickname.value.trim() || 'Pixel User',
-        email: f.email.value.trim(),
-        accountType: 'pro',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(f.email.value.trim())}`,
-      };
-      saveState();
-      updateUserUI();
-      closeModal('modal-auth');
+      const email = f.email.value.trim();
+      const password = f.password.value;
+      const nickname = f.nickname.value.trim() || email.split('@')[0];
+      try {
+        if (appMeta.authMode === 'register') {
+          const { error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { nickname } },
+          });
+          if (error) throw error;
+          alert(appMeta.lang === 'en' ? 'Check your email to confirm signup, or sign in if confirmation is disabled.' : '注册成功。若项目开启邮箱验证，请查收邮件；否则可直接登录。');
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+        }
+        closeModal('modal-auth');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      }
     });
-    document.getElementById('menu-logout').addEventListener('click', () => {
-      appMeta.user = null;
-      saveState();
-      updateUserUI();
+    document.getElementById('menu-logout').addEventListener('click', async () => {
+      if (supabaseClient) await supabaseClient.auth.signOut();
       document.getElementById('user-menu').classList.add('hidden');
     });
     document.querySelector('[data-i18n="settings"]').addEventListener('click', () => {
@@ -1702,11 +1948,31 @@
       }
     });
 
-    initImageDropZones();
-    loadState();
-    switchSubheader('kol');
-    document.getElementById('global-search').value = state.searchQuery || '';
-    applyI18n();
+    async function bootstrap() {
+      initImageDropZones();
+      loadMeta();
+      switchSubheader('kol');
+      document.getElementById('global-search').value = state.searchQuery || '';
+      toggleUploadButtons(false);
+
+      if (!initSupabaseClient()) {
+        alert(t('configMissing'));
+        applyI18n();
+        return;
+      }
+      await initAuth();
+      try {
+        await fetchAllPosts();
+        applyI18n();
+        subscribePostsRealtime();
+      } catch (err) {
+        console.error(err);
+        alert(t('loadFailed') + '\n' + (err.message || ''));
+        applyI18n();
+      }
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>
