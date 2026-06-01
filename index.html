@@ -472,7 +472,7 @@
               <p id="menu-email" class="text-xs text-ink/50 mt-0.5 truncate"></p>
             </div>
             <button type="button" class="user-menu-item" id="menu-my-favorites" data-i18n="myFavorites">我的收藏</button>
-            <button type="button" class="user-menu-item" data-i18n="settings">设置</button>
+            <button type="button" class="user-menu-item" id="menu-settings" data-i18n="settings">设置</button>
             <div class="user-menu-divider"></div>
             <button type="button" class="user-menu-item text-red-600/90" id="menu-logout" data-i18n="logout">退出登录</button>
           </div>
@@ -655,6 +655,31 @@
     </div>
   </div>
 
+  <div id="modal-settings" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
+    <div class="bg-surface rounded-3xl w-full max-w-md border border-line shadow-card">
+      <div class="px-6 py-5 border-b border-line flex justify-between items-center">
+        <h3 class="text-lg font-semibold" data-i18n="settingsTitle">账号设置</h3>
+        <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-settings">✕</button>
+      </div>
+      <form id="form-settings" class="p-6 space-y-4">
+        <label class="block text-sm"><span data-i18n="nickname">昵称</span>
+          <input name="nickname" required class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="CreatorLook User" /></label>
+        <label class="block text-sm"><span data-i18n="avatarUrl">头像链接</span>
+          <input name="avatarUrl" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="https://.../avatar.png" /></label>
+        <div class="flex items-center gap-3 pt-1">
+          <div class="w-11 h-11 rounded-full overflow-hidden border border-line bg-wash shrink-0">
+            <img id="settings-avatar-preview" src="" alt="" class="w-full h-full object-cover" />
+          </div>
+          <p class="text-xs text-ink/55" data-i18n="avatarHint">支持公开图片 URL，保存后右上角头像会更新。</p>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="btn-godly btn-godly-primary flex-1" data-i18n="save">保存</button>
+          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-settings" data-i18n="cancel">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const STORAGE_KEY = 'kol-inspiration-app-v2';
@@ -685,7 +710,7 @@
         configMissing: '未配置 Supabase：请在 Vercel 设置 NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 并重新部署',
         urlAsApiKey: 'ANON_KEY 填错了：不能填项目 URL。请到 Supabase → Settings → API Keys，复制 Publishable key（sb_publishable_...）或 anon key（eyJ...）填入 Vercel 的 NEXT_PUBLIC_SUPABASE_ANON_KEY，然后 Redeploy。',
         invalidApiKey: 'API Key 无效：请检查 Vercel 环境变量 NEXT_PUBLIC_SUPABASE_ANON_KEY 是否与 Supabase Dashboard 中的 Publishable / anon key 完全一致。',
-        myFavorites: '我的收藏', settings: '设置', logout: '退出登录', favoritesTitle: '收藏夹',
+        myFavorites: '我的收藏', settings: '设置', settingsTitle: '账号设置', avatarUrl: '头像链接', avatarHint: '支持公开图片 URL，保存后右上角头像会更新。', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', delete: '删除',
         addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
         save: '保存', cancel: '取消', noKol: '该分类暂无 KOL', noContent: '该分类暂无内容',
@@ -712,7 +737,7 @@
         configMissing: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL / ANON_KEY on Vercel and redeploy.',
         urlAsApiKey: 'ANON_KEY is wrong: do not use the project URL. Copy the Publishable key (sb_publishable_...) or anon key (eyJ...) from Supabase → Settings → API Keys into NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel, then redeploy.',
         invalidApiKey: 'Invalid API key. Make sure NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel exactly matches your Supabase Publishable or anon key.',
-        myFavorites: 'My Favorites', settings: 'Settings', logout: 'Log out', favoritesTitle: 'Favorites',
+        myFavorites: 'My Favorites', settings: 'Settings', settingsTitle: 'Account settings', avatarUrl: 'Avatar URL', avatarHint: 'Use a public image URL. The top-right avatar updates after save.', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', delete: 'Delete',
         addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
         save: 'Save', cancel: 'Cancel', noKol: 'No KOL in this category', noContent: 'No content in this category',
@@ -1056,6 +1081,29 @@
         appMeta.user = null;
       }
       updateUserUI();
+
+      // Load saved profile (nickname/avatar_url) from DB after login
+      if (session?.user?.id) {
+        void loadProfileFromDb(session.user.id);
+      }
+    }
+
+    async function loadProfileFromDb(userId) {
+      if (!supabaseClient || !authSession) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('nickname, avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return;
+        if (data.nickname) appMeta.user.nickname = data.nickname;
+        if (data.avatar_url) appMeta.user.avatar = data.avatar_url;
+        updateUserUI();
+      } catch (err) {
+        console.warn('[CreatorLook] load profile failed:', err?.message || err);
+      }
     }
 
     async function initAuth() {
@@ -2003,9 +2051,81 @@
       if (supabaseClient) await supabaseClient.auth.signOut();
       document.getElementById('user-menu').classList.add('hidden');
     });
-    document.querySelector('[data-i18n="settings"]').addEventListener('click', () => {
-      alert(t('settingsSoon'));
+
+    function fillSettingsForm() {
+      const f = document.getElementById('form-settings');
+      if (!f) return;
+      const nickname = appMeta.user?.nickname || '';
+      const avatarUrl = appMeta.user?.avatar || '';
+      f.nickname.value = nickname;
+      f.avatarUrl.value = avatarUrl;
+      document.getElementById('settings-avatar-preview').src = avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appMeta.user?.email || 'user')}`;
+    }
+
+    document.getElementById('menu-settings').addEventListener('click', () => {
       document.getElementById('user-menu').classList.add('hidden');
+      if (!requireAuth()) return;
+      fillSettingsForm();
+      openModal('modal-settings');
+    });
+
+    function isValidHttpUrl(raw) {
+      if (!raw) return true;
+      try {
+        const u = new URL(String(raw));
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }
+
+    async function saveSettings(nickname, avatarUrl) {
+      if (!supabaseClient || !authSession?.user?.id) throw new Error('NOT_AUTHENTICATED');
+      const userId = authSession.user.id;
+      const payload = {
+        id: userId,
+        nickname: nickname || null,
+        avatar_url: avatarUrl || null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabaseClient.from('profiles').upsert(payload);
+      if (error) throw error;
+      if (nickname) appMeta.user.nickname = nickname;
+      if (avatarUrl) appMeta.user.avatar = avatarUrl;
+      if (!avatarUrl) {
+        // revert to deterministic fallback when empty
+        appMeta.user.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appMeta.user?.email || userId)}`;
+      }
+      updateUserUI();
+    }
+
+    document.getElementById('form-settings').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!requireAuth()) return;
+      const f = e.target;
+      const nickname = (f.nickname.value || '').trim();
+      const avatarUrl = (f.avatarUrl.value || '').trim();
+      if (!nickname) { alert(appMeta.lang === 'en' ? 'Nickname is required.' : '昵称不能为空。'); return; }
+      if (!isValidHttpUrl(avatarUrl)) { alert(appMeta.lang === 'en' ? 'Avatar URL must be http(s).' : '头像链接必须是 http/https URL。'); return; }
+      const submitBtn = f.querySelector('button[type="submit"]');
+      const prevLabel = submitBtn?.textContent;
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
+      try {
+        await saveSettings(nickname, avatarUrl);
+        closeModal('modal-settings');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || String(err));
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('save'); }
+      }
+    });
+
+    document.getElementById('form-settings').avatarUrl?.addEventListener?.('input', (e) => {
+      const v = String(e.target.value || '').trim();
+      const preview = document.getElementById('settings-avatar-preview');
+      if (!preview) return;
+      preview.src = v || (appMeta.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appMeta.user?.email || 'user')}`);
     });
 
     document.addEventListener('click', (e) => {
@@ -2013,7 +2133,7 @@
       if (!e.target.closest('#btn-lang') && !e.target.closest('#lang-popover')) document.getElementById('lang-popover').classList.add('hidden');
     });
 
-    ['modal-kol', 'modal-gallery', 'modal-auth'].forEach((id) => {
+    ['modal-kol', 'modal-gallery', 'modal-auth', 'modal-settings'].forEach((id) => {
       const m = document.getElementById(id);
       if (m) m.addEventListener('click', (e) => { if (e.target === m) closeModal(id); });
     });
@@ -2028,6 +2148,7 @@
         closeModal('modal-kol');
         closeModal('modal-gallery');
         closeModal('modal-auth');
+        closeModal('modal-settings');
         closeFavoritesDrawer();
         document.getElementById('user-menu').classList.add('hidden');
         document.getElementById('lang-popover').classList.add('hidden');
