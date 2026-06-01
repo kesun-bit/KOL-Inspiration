@@ -1,0 +1,7 @@
+{
+  "name": "creatorlook",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/inject-config.mjs"
+  }
+}

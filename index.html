@@ -656,7 +656,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
   <script>
     const STORAGE_KEY = 'kol-inspiration-app-v2';
     const POST_CATEGORIES = {
@@ -942,15 +941,70 @@
       return window.CREATORLOOK_CONFIG || {};
     }
 
+    /** Supabase createClient 只需要项目根 URL，不能带 /rest/v1 等后缀 */
+    function normalizeSupabaseUrl(raw) {
+      const value = String(raw || '').trim();
+      if (!value) return '';
+      try {
+        return new URL(value).origin.replace(/\/+$/, '');
+      } catch {
+        return '';
+      }
+    }
+
+    function loadConfigScript(src) {
+      return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-config-src="${src}"]`);
+        if (existing) {
+          existing.addEventListener('load', () => resolve(), { once: true });
+          existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = src;
+        script.dataset.configSrc = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function loadRuntimeConfig() {
+      const sources = ['/api/config', 'config.js'];
+      for (const src of sources) {
+        try {
+          await loadConfigScript(src);
+          const cfg = getSupabaseConfig();
+          const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
+          const key = String(cfg.SUPABASE_ANON_KEY || '').trim();
+          if (url && key) {
+            window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: key };
+            return true;
+          }
+        } catch (err) {
+          console.warn('[CreatorLook] config source failed:', src, err.message);
+        }
+      }
+      return false;
+    }
+
     function initSupabaseClient() {
       const cfg = getSupabaseConfig();
-      if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-        console.warn(t('configMissing'));
+      const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
+      const key = String(cfg.SUPABASE_ANON_KEY || '').trim();
+      if (!url || !key) {
+        console.warn(t('configMissing'), { url: url || '(empty)', keyLength: key.length });
         return false;
       }
-      supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+      if (!window.supabase?.createClient) {
+        console.error('Supabase JS SDK not loaded');
+        return false;
+      }
+      supabaseClient = window.supabase.createClient(url, key, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       });
+      window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: key };
+      console.info('[CreatorLook] Supabase client ready:', url);
       return true;
     }
 
@@ -1955,7 +2009,8 @@
       document.getElementById('global-search').value = state.searchQuery || '';
       toggleUploadButtons(false);
 
-      if (!initSupabaseClient()) {
+      const configOk = await loadRuntimeConfig();
+      if (!configOk || !initSupabaseClient()) {
         alert(t('configMissing'));
         applyI18n();
         return;

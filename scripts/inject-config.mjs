@@ -1,13 +1,7 @@
 import { writeFileSync } from 'fs';
+import { readSupabaseEnv } from './normalize-supabase-url.mjs';
 
-const url =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.SUPABASE_URL ||
-  '';
-const key =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  '';
+const { url, key } = readSupabaseEnv();
 
 const config = {
   SUPABASE_URL: url,
@@ -20,4 +14,4 @@ writeFileSync(
   `/* Auto-generated at build — do not edit */\nwindow.CREATORLOOK_CONFIG = ${JSON.stringify(config, null, 2)};\n`
 );
 
-console.log('Wrote config.js', url ? '(Supabase URL set)' : '(WARNING: missing Supabase URL)');
+console.log('Wrote config.js', url ? `(Supabase URL: ${url})` : '(WARNING: missing Supabase URL)');
