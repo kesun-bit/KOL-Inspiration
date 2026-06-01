@@ -683,6 +683,8 @@
         nickname: '昵称', email: '邮箱', password: '密码', authHint: '使用邮箱注册/登录后可上传与删除',
         authRequired: '请先登录', saving: '保存中…', loadFailed: '加载数据失败，请检查 Supabase 配置',
         configMissing: '未配置 Supabase：请在 Vercel 设置 NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 并重新部署',
+        urlAsApiKey: 'ANON_KEY 填错了：不能填项目 URL。请到 Supabase → Settings → API Keys，复制 Publishable key（sb_publishable_...）或 anon key（eyJ...）填入 Vercel 的 NEXT_PUBLIC_SUPABASE_ANON_KEY，然后 Redeploy。',
+        invalidApiKey: 'API Key 无效：请检查 Vercel 环境变量 NEXT_PUBLIC_SUPABASE_ANON_KEY 是否与 Supabase Dashboard 中的 Publishable / anon key 完全一致。',
         myFavorites: '我的收藏', settings: '设置', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', delete: '删除',
         addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
@@ -708,6 +710,8 @@
         nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Sign in with email to upload or delete',
         authRequired: 'Please sign in first', saving: 'Saving…', loadFailed: 'Failed to load data. Check Supabase config.',
         configMissing: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL / ANON_KEY on Vercel and redeploy.',
+        urlAsApiKey: 'ANON_KEY is wrong: do not use the project URL. Copy the Publishable key (sb_publishable_...) or anon key (eyJ...) from Supabase → Settings → API Keys into NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel, then redeploy.',
+        invalidApiKey: 'Invalid API key. Make sure NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel exactly matches your Supabase Publishable or anon key.',
         myFavorites: 'My Favorites', settings: 'Settings', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', delete: 'Delete',
         addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
@@ -941,6 +945,8 @@
       return window.CREATORLOOK_CONFIG || {};
     }
 
+    let configLoadError = null;
+
     /** Supabase createClient 只需要项目根 URL，不能带 /rest/v1 等后缀 */
     function normalizeSupabaseUrl(raw) {
       const value = String(raw || '').trim();
@@ -950,6 +956,31 @@
       } catch {
         return '';
       }
+    }
+
+    function normalizeSupabaseAnonKey(raw) {
+      const key = String(raw || '').trim();
+      if (!key) return { key: '', error: 'empty' };
+      if (/^https?:\/\//i.test(key) || key.includes('.supabase.co')) {
+        return { key: '', error: 'url_as_key' };
+      }
+      if (key.startsWith('sb_secret_')) {
+        return { key: '', error: 'secret_key' };
+      }
+      const ok = key.startsWith('eyJ') || key.startsWith('sb_publishable_');
+      if (!ok) return { key: '', error: 'format' };
+      return { key, error: null };
+    }
+
+    function configErrorMessage(errorCode) {
+      if (errorCode === 'url_as_key') return t('urlAsApiKey');
+      if (errorCode === 'secret_key') {
+        return appMeta.lang === 'en'
+          ? 'Do not use sb_secret_ key in the browser. Use Publishable or anon key instead.'
+          : '浏览器不能使用 sb_secret_ 密钥，请改用 Publishable key 或 anon key。';
+      }
+      if (errorCode === 'format') return t('invalidApiKey');
+      return t('configMissing');
     }
 
     function loadConfigScript(src) {
@@ -970,17 +1001,19 @@
     }
 
     async function loadRuntimeConfig() {
+      configLoadError = null;
       const sources = ['/api/config', 'config.js'];
       for (const src of sources) {
         try {
           await loadConfigScript(src);
           const cfg = getSupabaseConfig();
           const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
-          const key = String(cfg.SUPABASE_ANON_KEY || '').trim();
-          if (url && key) {
-            window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: key };
+          const keyResult = normalizeSupabaseAnonKey(cfg.SUPABASE_ANON_KEY);
+          if (url && keyResult.key) {
+            window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: keyResult.key };
             return true;
           }
+          if (keyResult.error) configLoadError = keyResult.error;
         } catch (err) {
           console.warn('[CreatorLook] config source failed:', src, err.message);
         }
@@ -991,19 +1024,20 @@
     function initSupabaseClient() {
       const cfg = getSupabaseConfig();
       const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
-      const key = String(cfg.SUPABASE_ANON_KEY || '').trim();
-      if (!url || !key) {
-        console.warn(t('configMissing'), { url: url || '(empty)', keyLength: key.length });
+      const keyResult = normalizeSupabaseAnonKey(cfg.SUPABASE_ANON_KEY);
+      if (!url || !keyResult.key) {
+        if (keyResult.error) configLoadError = keyResult.error;
+        console.warn(t('configMissing'), { url: url || '(empty)', keyError: keyResult.error || 'empty' });
         return false;
       }
       if (!window.supabase?.createClient) {
         console.error('Supabase JS SDK not loaded');
         return false;
       }
-      supabaseClient = window.supabase.createClient(url, key, {
+      supabaseClient = window.supabase.createClient(url, keyResult.key, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       });
-      window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: key };
+      window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: keyResult.key };
       console.info('[CreatorLook] Supabase client ready:', url);
       return true;
     }
@@ -2011,7 +2045,7 @@
 
       const configOk = await loadRuntimeConfig();
       if (!configOk || !initSupabaseClient()) {
-        alert(t('configMissing'));
+        alert(configErrorMessage(configLoadError));
         applyI18n();
         return;
       }
@@ -2022,7 +2056,8 @@
         subscribePostsRealtime();
       } catch (err) {
         console.error(err);
-        alert(t('loadFailed') + '\n' + (err.message || ''));
+        const msg = /invalid api key/i.test(err.message || '') ? t('invalidApiKey') : t('loadFailed');
+        alert(msg + '\n' + (err.message || ''));
         applyI18n();
       }
     }

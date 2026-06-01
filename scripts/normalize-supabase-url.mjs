@@ -25,3 +25,17 @@ export function readSupabaseEnv() {
   ).trim();
   return { url, key };
 }
+
+export function validateSupabaseAnonKey(raw) {
+  const key = String(raw || '').trim();
+  if (!key) return { key: '', error: 'empty' };
+  if (/^https?:\/\//i.test(key) || key.includes('.supabase.co')) {
+    return { key: '', error: 'url_as_key' };
+  }
+  if (key.startsWith('sb_secret_')) {
+    return { key: '', error: 'secret_key' };
+  }
+  const ok = key.startsWith('eyJ') || key.startsWith('sb_publishable_');
+  if (!ok) return { key: '', error: 'format' };
+  return { key, error: null };
+}
