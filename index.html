@@ -1433,10 +1433,8 @@
     }
 
     function toggleUploadButtons(loggedIn) {
-      ['btn-add-kol', 'btn-add-inspiration', 'btn-add-creative', 'btn-add-ai'].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.classList.toggle('hidden', !loggedIn);
-      });
+      // 上传按钮始终展示；是否允许上传由 requireAuth() 在点击时控制
+      // （这样未登录用户仍能看到 UI，但点击会弹出登录弹窗）
     }
 
     function updateUserUI() {
