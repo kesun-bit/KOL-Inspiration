@@ -30,6 +30,11 @@ drop policy if exists "posts_delete_authenticated" on public.posts;
 create policy "posts_delete_authenticated" on public.posts
   for delete using (auth.role() = 'authenticated');
 
+drop policy if exists "posts_update_authenticated" on public.posts;
+create policy "posts_update_authenticated" on public.posts
+  for update using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- Storage policies (bucket must exist and be public)
 drop policy if exists "creator_bucket_public_read" on storage.objects;
 create policy "creator_bucket_public_read" on storage.objects

@@ -621,7 +621,8 @@
   </div>
 
   <div id="context-menu" class="context-menu hidden">
-    <button id="context-delete-btn" class="context-menu-item" data-i18n="delete">删除</button>
+    <button id="context-edit-btn" type="button" class="context-menu-item hidden" data-i18n="edit">编辑</button>
+    <button id="context-delete-btn" type="button" class="context-menu-item" data-i18n="delete">删除</button>
   </div>
 
   <div id="favorites-backdrop" class="fixed inset-0 z-[54] hidden bg-black/25"></div>
@@ -711,7 +712,7 @@
         urlAsApiKey: 'ANON_KEY 填错了：不能填项目 URL。请到 Supabase → Settings → API Keys，复制 Publishable key（sb_publishable_...）或 anon key（eyJ...）填入 Vercel 的 NEXT_PUBLIC_SUPABASE_ANON_KEY，然后 Redeploy。',
         invalidApiKey: 'API Key 无效：请检查 Vercel 环境变量 NEXT_PUBLIC_SUPABASE_ANON_KEY 是否与 Supabase Dashboard 中的 Publishable / anon key 完全一致。',
         myFavorites: '我的收藏', settings: '设置', settingsTitle: '账号设置', avatarUrl: '头像链接', avatarHint: '支持公开图片 URL，保存后右上角头像会更新。', logout: '退出登录', favoritesTitle: '收藏夹',
-        favoritesEmpty: '暂无收藏', viewProfile: '查看主页', delete: '删除',
+        favoritesEmpty: '暂无收藏', viewProfile: '查看主页', edit: '编辑', delete: '删除',
         addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
         save: '保存', cancel: '取消', noKol: '该分类暂无 KOL', noContent: '该分类暂无内容',
         confirmDelete: '确定删除该图片吗？', accountTypePro: '专业版账户', accountTypeFree: '免费账户',
@@ -738,7 +739,7 @@
         urlAsApiKey: 'ANON_KEY is wrong: do not use the project URL. Copy the Publishable key (sb_publishable_...) or anon key (eyJ...) from Supabase → Settings → API Keys into NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel, then redeploy.',
         invalidApiKey: 'Invalid API key. Make sure NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel exactly matches your Supabase Publishable or anon key.',
         myFavorites: 'My Favorites', settings: 'Settings', settingsTitle: 'Account settings', avatarUrl: 'Avatar URL', avatarHint: 'Use a public image URL. The top-right avatar updates after save.', logout: 'Log out', favoritesTitle: 'Favorites',
-        favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', delete: 'Delete',
+        favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', edit: 'Edit', delete: 'Delete',
         addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
         save: 'Save', cancel: 'Cancel', noKol: 'No KOL in this category', noContent: 'No content in this category',
         confirmDelete: 'Delete this item?', accountTypePro: 'Pro account', accountTypeFree: 'Free account',
@@ -1222,6 +1223,17 @@
       if (error) throw error;
     }
 
+    async function updatePost({ id, title, fans, imageUrl, storagePath, metadata }) {
+      const { error } = await supabaseClient.from('posts').update({
+        title: title || null,
+        fans: fans || null,
+        image_url: imageUrl,
+        storage_path: storagePath || null,
+        metadata: metadata || {},
+      }).eq('id', id);
+      if (error) throw error;
+    }
+
     async function deletePostById(id, storagePath) {
       const { error } = await supabaseClient.from('posts').delete().eq('id', id);
       if (error) throw error;
@@ -1245,6 +1257,15 @@
       else if (row.category === 'inspiration') state.creative.unshift(postToMedia(row));
     }
 
+    function replacePostInState(row) {
+      if (!row?.id) return;
+      removePostFromState(row.category, row.id);
+      if (row.category === 'kol') state.kols.unshift(postToKol(row));
+      else if (row.category === 'net_model') state.inspiration.unshift(postToMedia(row));
+      else if (row.category === 'ai_model') state.aiModels.unshift(postToMedia(row));
+      else if (row.category === 'inspiration') state.creative.unshift(postToMedia(row));
+    }
+
     function renderByCategory(category) {
       if (category === 'kol') renderKols();
       else if (category === 'net_model') renderInspiration();
@@ -1258,6 +1279,11 @@
         .channel('creatorlook-posts')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
           addPostToState(payload.new);
+          renderByCategory(payload.new.category);
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+          if (!payload.new?.id) return;
+          replacePostInState(payload.new);
           renderByCategory(payload.new.category);
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
@@ -1682,14 +1708,20 @@
       bindFavoriteButtons(grid);
     }
 
-    function editKol(id){
-      const kol=state.kols.find((k)=>k.id===id); if(!kol)return;
-      const f=document.getElementById('form-kol');
-      document.getElementById('modal-kol-title').textContent=t('editKol');
-      document.getElementById('kol-id').value=kol.id;
-      f.name.value=kol.name; f.account.value=kol.account||''; f.followers.value=kol.followers||'';
-      f.gender.value=kol.gender||'女'; f.region.value=kol.region||''; f.ethnicity.value=kol.ethnicity||'欧美白人';
-      f.accountType.value=kol.accountType||'';
+    function editKol(id) {
+      const kol = state.kols.find((k) => k.id === id);
+      if (!kol) return;
+      const f = document.getElementById('form-kol');
+      document.getElementById('modal-kol-title').textContent = t('editKol');
+      document.getElementById('kol-id').value = kol.id;
+      pendingFiles['kol-image-data'] = null;
+      f.name.value = kol.name;
+      f.account.value = kol.account || '';
+      f.followers.value = kol.followers || '';
+      f.gender.value = kol.gender || '女';
+      f.region.value = kol.region || '';
+      f.ethnicity.value = kol.ethnicity || '欧美白人';
+      f.accountType.value = kol.accountType || '';
       f.searchTags.value = (kol.searchTags || []).join(', ');
       setDropZoneImage('kol-image-data', kol.image || '');
       openModal('modal-kol');
@@ -1708,13 +1740,28 @@
       e.preventDefault();
       if (!requireAuth() || !supabaseClient) return;
       const f = e.target;
+      const editId = document.getElementById('kol-id').value.trim();
+      const existingKol = editId ? state.kols.find((k) => k.id === editId) : null;
       const file = pendingFiles['kol-image-data'];
-      if (!file) { alert(t('imageRequired')); return; }
       const submitBtn = f.querySelector('button[type="submit"]');
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
-        const { imageUrl, storagePath } = await uploadImageToStorage(file, POST_CATEGORIES.kol);
+        let imageUrl;
+        let storagePath;
+        if (file) {
+          ({ imageUrl, storagePath } = await uploadImageToStorage(file, POST_CATEGORIES.kol));
+          if (existingKol?.storagePath) await deleteStorageFile(existingKol.storagePath);
+        } else if (existingKol?.image) {
+          imageUrl = existingKol.image;
+          storagePath = existingKol.storagePath || '';
+        } else if (f.image?.value?.trim()) {
+          imageUrl = f.image.value.trim();
+          storagePath = existingKol?.storagePath || '';
+        } else {
+          alert(t('imageRequired'));
+          return;
+        }
         const searchTags = parseTagsFromString(f.searchTags?.value);
         const metadata = {
           account: f.account.value.trim(),
@@ -1731,16 +1778,24 @@
             followers: f.followers.value.trim(),
           }),
         };
-        await insertPost({
-          category: POST_CATEGORIES.kol,
+        const payload = {
           title: f.name.value.trim(),
           fans: f.followers.value.trim(),
           imageUrl,
           storagePath,
           metadata,
-        });
+        };
+        if (editId) {
+          await updatePost({ id: editId, ...payload });
+        } else {
+          await insertPost({
+            category: POST_CATEGORIES.kol,
+            ...payload,
+          });
+        }
         closeModal('modal-kol');
         clearDropZone('kol-image-data');
+        document.getElementById('kol-id').value = '';
       } catch (err) {
         console.error(err);
         alert(err.message || String(err));
@@ -1845,6 +1900,7 @@
     document.getElementById('lightbox').addEventListener('click',(e)=>{if(e.target.id==='lightbox')closeLightbox();});
 
     const contextMenu = document.getElementById('context-menu');
+    const contextEditBtn = document.getElementById('context-edit-btn');
     const contextDeleteBtn = document.getElementById('context-delete-btn');
     let contextTarget = null;
 
@@ -1875,13 +1931,24 @@
       }
       e.preventDefault();
       contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
+      const isKol = contextTarget.type === 'kol';
+      contextEditBtn.classList.toggle('hidden', !isKol);
       contextMenu.classList.remove('hidden');
       const menuWidth = 152;
-      const menuHeight = 44;
+      const menuHeight = isKol ? 88 : 44;
       const left = Math.min(e.clientX, window.innerWidth - menuWidth - 8);
       const top = Math.min(e.clientY, window.innerHeight - menuHeight - 8);
       contextMenu.style.left = `${left}px`;
       contextMenu.style.top = `${top}px`;
+    });
+
+    contextEditBtn.addEventListener('click', () => {
+      if (!contextTarget) return;
+      const { type, id } = contextTarget;
+      hideContextMenu();
+      if (type !== 'kol') return;
+      if (!requireAuth()) return;
+      editKol(id);
     });
 
     contextDeleteBtn.addEventListener('click', () => {
