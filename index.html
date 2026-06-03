@@ -425,6 +425,76 @@
       white-space: nowrap;
       border: 0;
     }
+
+    .card-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #efefee;
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+    .card-img.is-loaded { opacity: 1; }
+    .card-img-wrap { background: #efefee; overflow: hidden; }
+
+    .tabs-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .tabs-scroll::-webkit-scrollbar { display: none; }
+
+    @media (max-width: 639px) {
+      .header-top-row {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        height: auto;
+        min-height: 64px;
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: 8px;
+        gap: 8px 10px;
+      }
+      .header-top-row > div:first-child { grid-column: 1; }
+      .header-top-right { grid-column: 2; grid-row: 1; }
+      .header-top-center {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: stretch;
+        width: 100%;
+      }
+      .header-top-row .tab-segment { width: 100%; justify-content: flex-start; }
+      .main-tab { padding: 7px 12px; font-size: 12px; }
+      .header-top-row img { height: 44px !important; }
+      .subheader-row { flex-wrap: wrap; gap: 10px; min-height: 44px; }
+      .btn-upload { height: 32px; font-size: 12px; }
+      .filter-link { font-size: 12px; padding: 6px 2px; }
+      .masonry { column-count: 2; column-gap: 10px; }
+      .masonry-item { margin-bottom: 10px; }
+      .kol-name { font-size: 15px; }
+      .kol-overlay { padding: 12px 10px 10px; }
+      .page-shell { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+      body { padding-bottom: env(safe-area-inset-bottom); }
+      .favorites-drawer { width: 100vw; padding-bottom: env(safe-area-inset-bottom); }
+      .context-menu { min-width: 128px; }
+      .modal-panel { max-height: min(92vh, calc(100dvh - 24px)); }
+    }
+
+    @media (min-width: 640px) and (max-width: 1023px) {
+      .header-top-row { height: 72px; gap: 8px 12px; }
+      .main-tab { padding: 7px 14px; font-size: 12px; }
+      .masonry { column-count: 3; }
+    }
+
+    @media (min-width: 1024px) {
+      .masonry { column-count: 5; }
+    }
+
+    @media (pointer: coarse) {
+      .fav-btn { opacity: 1; }
+      .media-card:hover { transform: none; }
+      .kol-card .fav-btn { opacity: 1; }
+    }
   </style>
 </head>
 <body class="text-ink font-sans min-h-screen antialiased">
@@ -434,7 +504,7 @@
       <div class="flex items-center justify-start min-w-0">
         <img src="assets/logo.png" alt="Pixelpose Logo" class="h-[58px] w-auto object-contain shrink-0" />
       </div>
-      <nav id="main-tabs" class="tab-segment header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
+      <nav id="main-tabs" class="tab-segment tabs-scroll header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
         <button data-tab="kol" class="main-tab tab-active" role="tab" data-i18n="tabKol">KOL</button>
         <button data-tab="inspiration" class="main-tab" role="tab" data-i18n="tabInspiration">网图模特</button>
         <button data-tab="ai-models" class="main-tab" role="tab" data-i18n="tabAi">AI模特</button>
@@ -518,7 +588,7 @@
   </main>
 
   <div id="modal-kol" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-    <div class="bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-line shadow-card">
+    <div class="modal-panel bg-surface rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-line shadow-card">
       <div class="px-6 py-5 border-b border-line flex justify-between items-center">
         <h3 id="modal-kol-title" class="text-lg font-semibold">添加 KOL</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-kol">✕</button>
@@ -565,7 +635,7 @@
   </div>
 
   <div id="modal-gallery" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-    <div class="bg-surface rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-line shadow-card">
+    <div class="modal-panel bg-surface rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-line shadow-card">
       <div class="px-6 py-5 border-b border-line flex justify-between items-center">
         <h3 id="modal-gallery-title" class="text-lg font-semibold">添加条目</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-gallery">✕</button>
@@ -637,7 +707,7 @@
   </aside>
 
   <div id="modal-auth" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-    <div class="bg-surface rounded-3xl w-full max-w-md border border-line shadow-card">
+    <div class="modal-panel bg-surface rounded-3xl w-full max-w-md border border-line shadow-card max-h-[90vh] overflow-y-auto">
       <div class="px-6 py-5 border-b border-line flex justify-between items-center">
         <h3 id="auth-modal-title" class="text-lg font-semibold" data-i18n="login">登录</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-auth">✕</button>
@@ -648,8 +718,11 @@
         <label class="block text-sm"><span data-i18n="email">邮箱</span>
           <input name="email" required type="email" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="you@email.com" /></label>
         <label class="block text-sm"><span data-i18n="password">密码</span>
-          <input name="password" required type="password" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="••••••" /></label>
+          <input name="password" required type="password" minlength="8" autocomplete="current-password" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="至少 8 位" /></label>
+        <label id="auth-confirm-wrap" class="block text-sm hidden"><span data-i18n="confirmPassword">确认密码</span>
+          <input name="confirmPassword" type="password" minlength="8" autocomplete="new-password" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="再次输入密码" /></label>
         <p class="text-xs text-ink/50" data-i18n="authHint">使用邮箱注册/登录后可上传与删除</p>
+        <p class="text-xs text-ink/45" data-i18n="privacyNote">我们仅存储昵称与头像链接，邮箱不会公开展示。</p>
         <button type="submit" class="btn-godly btn-godly-primary w-full" data-i18n="login">登录</button>
         <button type="button" id="btn-switch-register" class="btn-godly w-full" data-i18n="switchRegister">没有账号？注册</button>
       </form>
@@ -657,7 +730,7 @@
   </div>
 
   <div id="modal-settings" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-    <div class="bg-surface rounded-3xl w-full max-w-md border border-line shadow-card">
+    <div class="modal-panel bg-surface rounded-3xl w-full max-w-md border border-line shadow-card max-h-[90vh] overflow-y-auto">
       <div class="px-6 py-5 border-b border-line flex justify-between items-center">
         <h3 class="text-lg font-semibold" data-i18n="settingsTitle">账号设置</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-settings">✕</button>
@@ -708,6 +781,9 @@
         loginRegister: '登录/注册', login: '登录', register: '注册', switchRegister: '没有账号？注册', switchLogin: '已有账号？登录',
         nickname: '昵称', email: '邮箱', password: '密码', authHint: '使用邮箱注册/登录后可上传与删除',
         authRequired: '请先登录', saving: '保存中…', loadFailed: '加载数据失败，请检查 Supabase 配置',
+        confirmPassword: '确认密码', privacyNote: '我们仅存储昵称与头像链接，邮箱不会公开展示。',
+        passwordMismatch: '两次密码不一致', passwordTooShort: '密码至少 8 位', invalidEmail: '邮箱格式不正确',
+        emailNotConfirmed: '请先前往邮箱点击确认链接后再登录', deleteFailed: '删除失败，已恢复该卡片',
         configMissing: '未配置 Supabase：请在 Vercel 设置 NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 并重新部署',
         urlAsApiKey: 'ANON_KEY 填错了：不能填项目 URL。请到 Supabase → Settings → API Keys，复制 Publishable key（sb_publishable_...）或 anon key（eyJ...）填入 Vercel 的 NEXT_PUBLIC_SUPABASE_ANON_KEY，然后 Redeploy。',
         invalidApiKey: 'API Key 无效：请检查 Vercel 环境变量 NEXT_PUBLIC_SUPABASE_ANON_KEY 是否与 Supabase Dashboard 中的 Publishable / anon key 完全一致。',
@@ -735,6 +811,9 @@
         loginRegister: 'Log in / Sign up', login: 'Log in', register: 'Sign up', switchRegister: 'No account? Sign up', switchLogin: 'Have an account? Log in',
         nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Sign in with email to upload or delete',
         authRequired: 'Please sign in first', saving: 'Saving…', loadFailed: 'Failed to load data. Check Supabase config.',
+        confirmPassword: 'Confirm password', privacyNote: 'We only store nickname and avatar URL. Your email is never shown publicly.',
+        passwordMismatch: 'Passwords do not match', passwordTooShort: 'Password must be at least 8 characters', invalidEmail: 'Invalid email address',
+        emailNotConfirmed: 'Please confirm your email before signing in', deleteFailed: 'Delete failed. The card was restored.',
         configMissing: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL / ANON_KEY on Vercel and redeploy.',
         urlAsApiKey: 'ANON_KEY is wrong: do not use the project URL. Copy the Publishable key (sb_publishable_...) or anon key (eyJ...) from Supabase → Settings → API Keys into NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel, then redeploy.',
         invalidApiKey: 'Invalid API key. Make sure NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel exactly matches your Supabase Publishable or anon key.',
@@ -1064,7 +1143,18 @@
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       });
       window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: keyResult.key };
-      console.info('[CreatorLook] Supabase client ready:', url);
+      try {
+        const origin = new URL(url).origin;
+        if (!document.querySelector(`link[data-supabase-preconnect="${origin}"]`)) {
+          const link = document.createElement('link');
+          link.rel = 'preconnect';
+          link.href = origin;
+          link.crossOrigin = 'anonymous';
+          link.dataset.supabasePreconnect = origin;
+          document.head.appendChild(link);
+        }
+      } catch (_) { /* ignore */ }
+      console.info('[CreatorLook] Supabase client ready');
       return true;
     }
 
@@ -1180,7 +1270,7 @@
       if (!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from('posts')
-        .select('*')
+        .select('id, image_url, storage_path, title, fans, category, metadata, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       applyPostsToState(data || []);
@@ -1312,6 +1402,41 @@
 
     function esc(s) { const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
     function tagHtml(label) { return `<span class="morandi-tag">${esc(label)}</span>`; }
+
+    function optimizedImageUrl(url, width = 640) {
+      if (!url || typeof url !== 'string') return url || '';
+      const u = url.trim();
+      if (u.includes('/storage/v1/object/public/')) {
+        const base = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+        const sep = base.includes('?') ? '&' : '?';
+        return `${base}${sep}width=${width}&quality=75&resize=contain`;
+      }
+      return u;
+    }
+
+    function buildCardImgHtml(url, alt, extraClass = '') {
+      const raw = (url || '').trim() || DEFAULT_FALLBACK_IMAGE;
+      const src = optimizedImageUrl(raw, 720);
+      const altEsc = esc(alt || '');
+      return `<img src="${esc(src)}" data-raw="${esc(raw)}" alt="${altEsc}" class="card-img ${extraClass}" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="if(!this.dataset.fbf){this.dataset.fbf=1;this.src=this.dataset.raw;}else{this.src='${DEFAULT_FALLBACK_IMAGE}';}this.classList.add('is-loaded')"/>`;
+    }
+
+    function maskEmail(email) {
+      if (!email || !email.includes('@')) return '';
+      const [local, domain] = email.split('@');
+      const visible = local.length <= 2 ? local[0] : local.slice(0, 2);
+      return `${visible}***@${domain}`;
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+    }
+
+    function bindCardImages(root) {
+      root.querySelectorAll('img.card-img:not(.is-loaded)').forEach((img) => {
+        if (img.complete && img.naturalWidth) img.classList.add('is-loaded');
+      });
+    }
 
     const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
     const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80';
@@ -1521,7 +1646,8 @@
         document.getElementById('user-avatar-img').src = u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.email)}`;
         document.getElementById('menu-nickname').textContent = u.nickname;
         document.getElementById('menu-account-type').textContent = u.accountType === 'pro' ? t('accountTypePro') : t('accountTypeFree');
-        document.getElementById('menu-email').textContent = u.email;
+        document.getElementById('menu-email').textContent = maskEmail(u.email);
+        document.getElementById('menu-email').title = u.email;
       }
     }
 
@@ -1692,9 +1818,9 @@
         return;
       }
       grid.innerHTML = list.map((kol) => `<article class="kol-card w-full" data-item-type="kol" data-item-id="${kol.id}">
-        <div class="kol-image group">
+        <div class="kol-image group card-img-wrap">
           ${favBtnHtml('kol', kol.id)}
-          <img src="${esc(kol.image)}" alt="${esc(kol.name)}" onerror="this.src='https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80'"/>
+          ${buildCardImgHtml(kol.image, kol.name, 'w-full h-full object-cover')}
           <div class="kol-overlay">
             <h3 class="kol-name">${esc(kolDisplayName(kol.name))}</h3>
             <p class="kol-desc">${kolDescHtml(kol.accountType)}</p>
@@ -1706,6 +1832,7 @@
         </div>
       </article>`).join('');
       bindFavoriteButtons(grid);
+      bindCardImages(grid);
     }
 
     function editKol(id) {
@@ -1834,13 +1961,14 @@
           tags: item.tags || buildDetailTags(item),
         }).replace(/'/g,'&#39;');
         return `<div class="masonry-item cursor-pointer" data-lightbox='${payload}' data-mode="${mode}" data-item-type="${mode}" data-item-id="${item.id}">
-          <div class="media-card rounded-[20px] relative group">
+          <div class="media-card rounded-[20px] relative group card-img-wrap">
             ${favBtnHtml(mode, item.id)}
-            <img src="${esc(item.image)}" alt="" class="w-full h-auto block" loading="lazy"/>
+            ${buildCardImgHtml(item.image, item.style || '', 'w-full h-auto block')}
           </div>
         </div>`;
       }).join('');
       bindFavoriteButtons(c);
+      bindCardImages(c);
       c.querySelectorAll('[data-lightbox]').forEach((card)=>card.addEventListener('click',(e)=>{
         if (e.target.closest('.fav-btn')) return;
         const data=JSON.parse(card.dataset.lightbox.replace(/&#39;/g,"'"));
@@ -1909,18 +2037,46 @@
       contextTarget = null;
     }
 
+    function restoreDeletedItem(type, id, item) {
+      if (!item) return;
+      const postCategory = uiTypeToPostCategory(type);
+      if (postCategory === 'kol') state.kols.unshift(item);
+      else if (postCategory === 'net_model') state.inspiration.unshift(item);
+      else if (postCategory === 'ai_model') state.aiModels.unshift(item);
+      else if (postCategory === 'inspiration') state.creative.unshift(item);
+      renderByCategory(postCategory);
+    }
+
     async function handleDeleteByContext(type, id) {
       if (!requireAuth() || !supabaseClient) return;
       if (!confirm(t('confirmDelete'))) return;
       const item = findItemWithStorage(type, id);
       if (!item) return;
       const postCategory = uiTypeToPostCategory(type);
+      const snapshot = { ...item };
+      hideContextMenu();
+      removePostFromState(postCategory, id);
+      renderByCategory(postCategory);
       try {
-        await deletePostById(id, item.storagePath);
+        await deletePostById(id, snapshot.storagePath);
       } catch (err) {
         console.error(err);
-        alert(err.message || String(err));
+        restoreDeletedItem(type, id, snapshot);
+        alert(t('deleteFailed') + '\n' + (err.message || ''));
       }
+    }
+
+    function showContextMenuAt(x, y, target) {
+      contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
+      const isKol = contextTarget.type === 'kol';
+      contextEditBtn.classList.toggle('hidden', !isKol);
+      contextMenu.classList.remove('hidden');
+      const menuWidth = 152;
+      const menuHeight = isKol ? 88 : 44;
+      const left = Math.min(x, window.innerWidth - menuWidth - 8);
+      const top = Math.min(y, window.innerHeight - menuHeight - 8);
+      contextMenu.style.left = `${left}px`;
+      contextMenu.style.top = `${top}px`;
     }
 
     document.addEventListener('contextmenu', (e) => {
@@ -1930,17 +2086,24 @@
         return;
       }
       e.preventDefault();
-      contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
-      const isKol = contextTarget.type === 'kol';
-      contextEditBtn.classList.toggle('hidden', !isKol);
-      contextMenu.classList.remove('hidden');
-      const menuWidth = 152;
-      const menuHeight = isKol ? 88 : 44;
-      const left = Math.min(e.clientX, window.innerWidth - menuWidth - 8);
-      const top = Math.min(e.clientY, window.innerHeight - menuHeight - 8);
-      contextMenu.style.left = `${left}px`;
-      contextMenu.style.top = `${top}px`;
+      showContextMenuAt(e.clientX, e.clientY, target);
     });
+
+    let touchPressTimer = null;
+    let touchPressTarget = null;
+    document.addEventListener('touchstart', (e) => {
+      const target = e.target.closest('[data-item-type][data-item-id]');
+      if (!target) return;
+      touchPressTarget = target;
+      clearTimeout(touchPressTimer);
+      touchPressTimer = setTimeout(() => {
+        if (touchPressTarget !== target) return;
+        const rect = target.getBoundingClientRect();
+        showContextMenuAt(rect.left + rect.width / 2, rect.top + 24, target);
+      }, 520);
+    }, { passive: true });
+    document.addEventListener('touchend', () => { clearTimeout(touchPressTimer); touchPressTarget = null; });
+    document.addEventListener('touchmove', () => { clearTimeout(touchPressTimer); });
 
     contextEditBtn.addEventListener('click', () => {
       if (!contextTarget) return;
@@ -2072,9 +2235,7 @@
     });
 
     document.getElementById('btn-login').addEventListener('click', () => {
-      appMeta.authMode = 'login';
-      document.getElementById('auth-modal-title').textContent = t('login');
-      document.getElementById('btn-switch-register').textContent = t('switchRegister');
+      setAuthMode('login');
       openModal('modal-auth');
     });
     document.getElementById('btn-avatar').addEventListener('click', (e) => {
@@ -2082,36 +2243,65 @@
       document.getElementById('user-menu').classList.toggle('hidden');
       document.getElementById('lang-popover').classList.add('hidden');
     });
-    document.getElementById('btn-switch-register').addEventListener('click', () => {
-      appMeta.authMode = appMeta.authMode === 'login' ? 'register' : 'login';
+    function setAuthMode(mode) {
+      appMeta.authMode = mode === 'register' ? 'register' : 'login';
       const isReg = appMeta.authMode === 'register';
       document.getElementById('auth-modal-title').textContent = isReg ? t('register') : t('login');
       document.getElementById('btn-switch-register').textContent = isReg ? t('switchLogin') : t('switchRegister');
+      document.getElementById('auth-confirm-wrap').classList.toggle('hidden', !isReg);
+      const confirmInput = document.querySelector('#form-auth [name="confirmPassword"]');
+      if (confirmInput) confirmInput.required = isReg;
+    }
+
+    document.getElementById('btn-switch-register').addEventListener('click', () => {
+      setAuthMode(appMeta.authMode === 'login' ? 'register' : 'login');
     });
     document.getElementById('form-auth').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!supabaseClient) { alert(t('configMissing')); return; }
       const f = e.target;
-      const email = f.email.value.trim();
+      const email = f.email.value.trim().toLowerCase();
       const password = f.password.value;
       const nickname = f.nickname.value.trim() || email.split('@')[0];
+      if (!isValidEmail(email)) { alert(t('invalidEmail')); return; }
+      if (password.length < 8) { alert(t('passwordTooShort')); return; }
+      if (appMeta.authMode === 'register') {
+        const confirm = f.confirmPassword?.value || '';
+        if (password !== confirm) { alert(t('passwordMismatch')); return; }
+      }
+      const submitBtn = f.querySelector('button[type="submit"]');
+      const prevLabel = submitBtn?.textContent;
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
         if (appMeta.authMode === 'register') {
-          const { error } = await supabaseClient.auth.signUp({
+          const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
-            options: { data: { nickname } },
+            options: { data: { nickname }, emailRedirectTo: window.location.origin },
           });
           if (error) throw error;
-          alert(appMeta.lang === 'en' ? 'Check your email to confirm signup, or sign in if confirmation is disabled.' : '注册成功。若项目开启邮箱验证，请查收邮件；否则可直接登录。');
+          if (data.user && !data.session) {
+            alert(appMeta.lang === 'en' ? 'Check your email to confirm signup before signing in.' : '注册成功，请先到邮箱点击确认链接后再登录。');
+          } else {
+            closeModal('modal-auth');
+          }
         } else {
-          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
           if (error) throw error;
+          if (data.user && !data.user.email_confirmed_at) {
+            await supabaseClient.auth.signOut();
+            alert(t('emailNotConfirmed'));
+            return;
+          }
+          closeModal('modal-auth');
         }
-        closeModal('modal-auth');
       } catch (err) {
         console.error(err);
-        alert(err.message || String(err));
+        const msg = err.message || String(err);
+        if (/email not confirmed/i.test(msg)) alert(t('emailNotConfirmed'));
+        else alert(msg);
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('login'); }
       }
     });
     document.getElementById('menu-logout').addEventListener('click', async () => {

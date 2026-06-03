@@ -26,14 +26,17 @@ drop policy if exists "posts_insert_authenticated" on public.posts;
 create policy "posts_insert_authenticated" on public.posts
   for insert with check (auth.role() = 'authenticated');
 
+-- 仅允许作者本人更新/删除自己的帖子（保护隐私与内容安全）
 drop policy if exists "posts_delete_authenticated" on public.posts;
-create policy "posts_delete_authenticated" on public.posts
-  for delete using (auth.role() = 'authenticated');
+drop policy if exists "posts_delete_own" on public.posts;
+create policy "posts_delete_own" on public.posts
+  for delete using (auth.uid() = created_by);
 
 drop policy if exists "posts_update_authenticated" on public.posts;
-create policy "posts_update_authenticated" on public.posts
-  for update using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+drop policy if exists "posts_update_own" on public.posts;
+create policy "posts_update_own" on public.posts
+  for update using (auth.uid() = created_by)
+  with check (auth.uid() = created_by);
 
 -- Storage policies (bucket must exist and be public)
 drop policy if exists "creator_bucket_public_read" on storage.objects;
@@ -45,8 +48,12 @@ create policy "creator_bucket_auth_insert" on storage.objects
   for insert with check (bucket_id = 'creator_bucket' and auth.role() = 'authenticated');
 
 drop policy if exists "creator_bucket_auth_delete" on storage.objects;
-create policy "creator_bucket_auth_delete" on storage.objects
-  for delete using (bucket_id = 'creator_bucket' and auth.role() = 'authenticated');
+drop policy if exists "creator_bucket_auth_delete_own" on storage.objects;
+create policy "creator_bucket_auth_delete_own" on storage.objects
+  for delete using (
+    bucket_id = 'creator_bucket'
+    and auth.uid()::text = (storage.foldername(name))[2]
+  );
 
 -- Realtime
 alter publication supabase_realtime add table public.posts;
