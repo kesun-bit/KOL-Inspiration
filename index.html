@@ -608,7 +608,7 @@
             <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="东京" /></label>
         </div>
         <label class="block text-sm">出海区域
-          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>欧美白人</option><option>中东</option><option>拉丁裔</option><option>黑人</option></select></label>
+          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>欧美白人</option><option>中东</option><option>拉丁裔</option><option>非裔</option></select></label>
         <label class="block text-sm">风格描述
           <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="高冷/复古/Y2K" /></label>
         <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
@@ -774,7 +774,7 @@
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
-    const KOL_ETHNICITY = ['全部', '欧美白人', '中东', '拉丁裔', '黑人'];
+    const KOL_ETHNICITY = ['全部', '欧美白人', '中东', '拉丁裔', '非裔'];
 
     const I18N = {
       zh: {
@@ -798,7 +798,7 @@
         catPlus: '大码', catGroup: '双人/多人', catProduct: '产品/动物/风景',
         catCreativeAll: '全部', catCreativeType: '字体设计', catCreativeBrand: '品牌设计',
         catCreativeHoliday: '节日主题', catCreativeCampaign: '玩法包装', catCreativeTrend: '趋势',
-        ethAll: '全部', ethWhite: '欧美白人', ethMiddleEast: '中东', ethLatino: '拉丁裔', ethBlack: '黑人',
+        ethAll: '全部', ethWhite: '欧美白人', ethMiddleEast: '中东', ethLatino: '拉丁裔', ethBlack: '非裔',
         genderUnknown: '未知', promptLabel: 'Prompt', detailTags: '细节标签（逗号分隔，仅 AI 模特）',
         noPrompt: '未提供 prompt', settingsSoon: '设置功能即将上线',
         searchPlaceholder: '搜索标签、风格...', searchTagsLabel: '搜索标签（逗号分隔，不显示在卡片上）',
@@ -829,7 +829,7 @@
         catPlus: 'Plus size', catGroup: 'Group', catProduct: 'Product / Animal / Landscape',
         catCreativeAll: 'All', catCreativeType: 'Typography', catCreativeBrand: 'Branding',
         catCreativeHoliday: 'Holiday & Seasonal', catCreativeCampaign: 'Campaign', catCreativeTrend: 'Trending',
-        ethAll: 'All', ethWhite: 'Caucasian', ethMiddleEast: 'Middle East', ethLatino: 'Latino', ethBlack: 'Black',
+        ethAll: 'All', ethWhite: 'Caucasian', ethMiddleEast: 'Middle East', ethLatino: 'Latino', ethBlack: 'African diaspora',
         genderUnknown: 'Unknown', promptLabel: 'Prompt', detailTags: 'Detail tags (comma, AI only)',
         noPrompt: 'No prompt provided', settingsSoon: 'Settings coming soon',
         searchPlaceholder: 'Search tags, styles...', searchTagsLabel: 'Search tags (comma, hidden on card)',
@@ -846,7 +846,7 @@
       '大码': 'catPlus', '双人/多人': 'catGroup', '产品/动物/风景': 'catProduct',
     };
     const ETH_I18N_KEYS = {
-      '全部': 'ethAll', '欧美白人': 'ethWhite', '中东': 'ethMiddleEast', '拉丁裔': 'ethLatino', '黑人': 'ethBlack',
+      '全部': 'ethAll', '欧美白人': 'ethWhite', '中东': 'ethMiddleEast', '拉丁裔': 'ethLatino', '非裔': 'ethBlack', '黑人': 'ethBlack',
     };
     const CREATIVE_CAT_I18N_KEYS = {
       '全部': 'catCreativeAll', '字体设计': 'catCreativeType', '品牌设计': 'catCreativeBrand',
@@ -939,12 +939,12 @@
       { id: 'kol-5', name: '@Kenji_Style', account: 'https://www.instagram.com', followers: '76万', gender: '男', region: 'Tokyo', ethnicity: '欧美白人', accountType: '日系极简/工装', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80' },
       { id: 'kol-6', name: '@LaylaLens', account: 'https://www.instagram.com', followers: '134万', gender: '女', region: 'Cairo', ethnicity: '中东', accountType: '奢华质感/金调', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80' },
       { id: 'kol-7', name: '@DiegoWave', account: 'https://www.instagram.com', followers: '88万', gender: '男', region: 'Mexico City', ethnicity: '拉丁裔', accountType: '阳光户外/运动', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80' },
-      { id: 'kol-8', name: '@ZaraNoir', account: 'https://www.instagram.com', followers: '165万', gender: '女', region: 'London', ethnicity: '黑人', accountType: '高级时装/暗调', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
+      { id: 'kol-8', name: '@ZaraNoir', account: 'https://www.instagram.com', followers: '165万', gender: '女', region: 'London', ethnicity: '非裔', accountType: '高级时装/暗调', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
       { id: 'kol-9', name: '@ChrisUrban', account: 'https://www.instagram.com', followers: '54万', gender: '男', region: 'Berlin', ethnicity: '欧美白人', accountType: '街头潮流/高对比', image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=500&q=80' },
       { id: 'kol-10', name: '@NinaSoft', account: 'https://www.instagram.com', followers: '192万', gender: '女', region: 'Seoul', ethnicity: '欧美白人', accountType: '韩系清透/少女感', image: 'https://images.unsplash.com/photo-1524502397800-2e73479fd698?w=500&q=80' },
       { id: 'kol-11', name: '@AmirFocus', account: 'https://www.instagram.com', followers: '61万', gender: '男', region: 'Riyadh', ethnicity: '中东', accountType: '商务精英/正装', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&q=80' },
       { id: 'kol-12', name: '@CamilaHue', account: 'https://www.instagram.com', followers: '117万', gender: '女', region: 'Buenos Aires', ethnicity: '拉丁裔', accountType: '色彩鲜明/度假风', image: 'https://images.unsplash.com/photo-1488426862026-3ee93a40d838?w=500&q=80' },
-      { id: 'kol-13', name: '@JordanFit', account: 'https://www.instagram.com', followers: '93万', gender: '男', region: 'Atlanta', ethnicity: '黑人', accountType: '健身活力/明快', image: 'https://images.unsplash.com/photo-1564564321837-a57b93a2d841?w=500&q=80' },
+      { id: 'kol-13', name: '@JordanFit', account: 'https://www.instagram.com', followers: '93万', gender: '男', region: 'Atlanta', ethnicity: '非裔', accountType: '健身活力/明快', image: 'https://images.unsplash.com/photo-1564564321837-a57b93a2d841?w=500&q=80' },
       { id: 'kol-14', name: '@ElenaMuse', account: 'https://www.instagram.com', followers: '248万', gender: '女', region: 'Milan', ethnicity: '欧美白人', accountType: '杂志大片/冷艳', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80' },
       { id: 'kol-15', name: '@PriyaGlow', account: 'https://www.instagram.com', followers: '72万', gender: '女', region: 'Mumbai', ethnicity: '中东', accountType: '民族风/珠宝点缀', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80' },
     ];
@@ -987,8 +987,13 @@
       return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
     }
 
+    function normalizeKolEthnicity(eth) {
+      if (eth === '黑人') return '非裔';
+      return eth || '欧美白人';
+    }
+
     function migrateKolItem(k) {
-      const item = { ...k, ethnicity: k.ethnicity || '欧美白人', accountType: k.accountType || '简约' };
+      const item = { ...k, ethnicity: normalizeKolEthnicity(k.ethnicity), accountType: k.accountType || '简约' };
       if (!item.searchTags?.length) item.searchTags = buildKolSearchTags(item);
       return item;
     }
@@ -1226,7 +1231,7 @@
         account: m.account || '',
         gender: m.gender || '女',
         region: m.region || '',
-        ethnicity: m.ethnicity || '欧美白人',
+        ethnicity: normalizeKolEthnicity(m.ethnicity),
         accountType: m.accountType || '',
         image: row.image_url,
         storagePath: row.storage_path || '',
@@ -1850,7 +1855,9 @@
 
     function renderKols() {
       const grid = document.getElementById('kol-grid');
-      let list = state.filterKolEthnicity === '全部' ? state.kols : state.kols.filter((k) => k.ethnicity === state.filterKolEthnicity);
+      let list = state.filterKolEthnicity === '全部'
+        ? state.kols
+        : state.kols.filter((k) => normalizeKolEthnicity(k.ethnicity) === state.filterKolEthnicity);
       if (state.searchQuery.trim() && getActiveTab() === 'kol') {
         list = list.filter((k) => matchesSearch(buildKolSearchTags(k), k.name));
       }
