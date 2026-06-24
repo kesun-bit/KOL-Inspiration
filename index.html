@@ -174,20 +174,17 @@
       font-size: 12px;
       color: rgba(255,255,255,.92);
     }
-    .kol-profile-btn {
+    .kol-profile-link {
       flex-shrink: 0;
-      height: 32px;
-      padding: 0 14px;
-      border-radius: 999px;
-      background: #fff;
-      color: #1a1a1a;
-      font-size: 12px;
-      font-weight: 600;
+      width: 18px;
+      height: 18px;
+      color: #fff;
       display: inline-flex;
       align-items: center;
-      transition: opacity .2s ease;
+      justify-content: center;
+      transition: transform .2s ease, opacity .2s ease;
     }
-    .kol-profile-btn:hover { opacity: .88; }
+    .kol-profile-link:hover { opacity: .86; transform: translateX(1px); }
 
     .header-search {
       position: relative;
@@ -281,6 +278,12 @@
       backdrop-filter: blur(4px);
       opacity: 0;
       transition: opacity .2s ease, transform .2s ease;
+    }
+    .fav-btn svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      flex: 0 0 auto;
     }
     .media-card:hover .fav-btn,
     .kol-image:hover .fav-btn,
@@ -430,6 +433,7 @@
       width: 100%;
       height: auto;
       display: block;
+      object-fit: cover;
       background: #efefee;
       opacity: 0;
       transition: opacity .2s ease;
@@ -450,10 +454,10 @@
         grid-template-columns: 1fr auto;
         grid-template-rows: auto auto;
         height: auto;
-        min-height: 64px;
-        padding-top: max(8px, env(safe-area-inset-top));
-        padding-bottom: 8px;
-        gap: 8px 10px;
+        min-height: 72px;
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: 10px;
+        gap: 10px 10px;
       }
       .header-top-row > div:first-child { grid-column: 1; }
       .header-top-right { grid-column: 2; grid-row: 1; }
@@ -465,7 +469,7 @@
       }
       .header-top-row .tab-segment { width: 100%; justify-content: flex-start; }
       .main-tab { padding: 7px 12px; font-size: 12px; }
-      .header-top-row img { height: 44px !important; }
+      .header-logo { height: 82px !important; width: auto !important; object-fit: contain; }
       .subheader-row { flex-wrap: wrap; gap: 10px; min-height: 44px; }
       .btn-upload { height: 32px; font-size: 12px; }
       .filter-link { font-size: 12px; padding: 6px 2px; }
@@ -500,13 +504,12 @@
 <body class="text-ink font-sans min-h-screen antialiased">
 
   <header class="sticky top-0 z-40 bg-paper/90 backdrop-blur-xl border-b border-line">
-    <div class="page-shell header-top-row h-[80px]">
+    <div class="page-shell header-top-row h-[92px]">
       <div class="flex items-center justify-start min-w-0">
-        <img src="assets/logo.png" alt="Pixelpose Logo" class="h-[58px] w-auto object-contain shrink-0" />
+        <img src="assets/logo.png" alt="CreatorLook 3D Logo" class="header-logo h-[84px] w-auto object-contain shrink-0 drop-shadow-[0_10px_26px_rgba(0,0,0,0.16)]" />
       </div>
       <nav id="main-tabs" class="tab-segment tabs-scroll header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
         <button data-tab="kol" class="main-tab tab-active" role="tab" data-i18n="tabKol">KOL</button>
-        <button data-tab="inspiration" class="main-tab" role="tab" data-i18n="tabInspiration">网图模特</button>
         <button data-tab="ai-models" class="main-tab" role="tab" data-i18n="tabAi">AI模特</button>
         <button data-tab="creative" class="main-tab" role="tab" data-i18n="tabCreative">灵感</button>
       </nav>
@@ -607,8 +610,8 @@
           <label class="block text-sm">地区
             <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="东京" /></label>
         </div>
-        <label class="block text-sm">出海区域
-          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>欧美白人</option><option>中东</option><option>拉丁裔</option><option>非裔</option></select></label>
+        <label class="block text-sm">人种
+          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>白人</option><option>地中海裔</option><option>拉丁裔</option><option>非裔</option><option>混血及其他</option></select></label>
         <label class="block text-sm">风格描述
           <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="高冷/复古/Y2K" /></label>
         <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
@@ -756,9 +759,12 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const STORAGE_KEY = 'kol-inspiration-app-v2';
+    const POSTS_STORAGE_KEY = 'kol-inspiration-posts-v1';
+    const AUTH_USERS_KEY = 'kol-inspiration-auth-users-v1';
+    const AUTH_SESSION_KEY = 'kol-inspiration-auth-session-v1';
+    const PROFILE_STORAGE_KEY = 'kol-inspiration-profile-v1';
     const POST_CATEGORIES = {
       kol: 'kol',
       inspiration: 'net_model',
@@ -774,21 +780,19 @@
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
-    const KOL_ETHNICITY = ['全部', '欧美白人', '中东', '拉丁裔', '非裔'];
+    const KOL_ETHNICITY = ['全部', '白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
 
     const I18N = {
       zh: {
-        tabKol: 'KOL', tabInspiration: '网图模特', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
+        tabKol: 'KOL', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
         addCreative: '添加灵感',
         loginRegister: '登录/注册', login: '登录', register: '注册', switchRegister: '没有账号？注册', switchLogin: '已有账号？登录',
         nickname: '昵称', email: '邮箱', password: '密码', authHint: '使用邮箱注册/登录后可上传与删除',
-        authRequired: '请先登录', saving: '保存中…', loadFailed: '加载数据失败，请检查 Supabase 配置',
+        authRequired: '请先登录', saving: '保存中…', loadFailed: '加载数据失败，请刷新页面重试',
         confirmPassword: '确认密码', privacyNote: '我们仅存储昵称与头像链接，邮箱不会公开展示。',
         passwordMismatch: '两次密码不一致', passwordTooShort: '密码至少 8 位', invalidEmail: '邮箱格式不正确',
-        emailNotConfirmed: '请先前往邮箱点击确认链接后再登录', deleteFailed: '删除失败，已恢复该卡片',
-        configMissing: '未配置 Supabase：请在 Vercel 设置 NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 并重新部署',
-        urlAsApiKey: 'ANON_KEY 填错了：不能填项目 URL。请到 Supabase → Settings → API Keys，复制 Publishable key（sb_publishable_...）或 anon key（eyJ...）填入 Vercel 的 NEXT_PUBLIC_SUPABASE_ANON_KEY，然后 Redeploy。',
-        invalidApiKey: 'API Key 无效：请检查 Vercel 环境变量 NEXT_PUBLIC_SUPABASE_ANON_KEY 是否与 Supabase Dashboard 中的 Publishable / anon key 完全一致。',
+        deleteFailed: '删除失败，已恢复该卡片',
+        authExists: '该邮箱已注册', authInvalid: '邮箱或密码错误',
         myFavorites: '我的收藏', settings: '设置', settingsTitle: '账号设置', avatarUrl: '头像链接', avatarHint: '支持公开图片 URL，保存后右上角头像会更新。', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', edit: '编辑', delete: '删除',
         addKol: '添加 KOL', editKol: '编辑 KOL', addWeb: '添加网图模特', addAi: '添加 AI 模特',
@@ -798,7 +802,7 @@
         catPlus: '大码', catGroup: '双人/多人', catProduct: '产品/动物/风景',
         catCreativeAll: '全部', catCreativeType: '字体设计', catCreativeBrand: '品牌设计',
         catCreativeHoliday: '节日主题', catCreativeCampaign: '玩法包装', catCreativeTrend: '趋势',
-        ethAll: '全部', ethWhite: '欧美白人', ethMiddleEast: '中东', ethLatino: '拉丁裔', ethBlack: '非裔',
+        ethAll: '全部', ethWhite: '白人', ethMiddleEast: '地中海裔', ethLatino: '拉丁裔', ethBlack: '非裔', ethMixed: '混血及其他',
         genderUnknown: '未知', promptLabel: 'Prompt', detailTags: '细节标签（逗号分隔，仅 AI 模特）',
         noPrompt: '未提供 prompt', settingsSoon: '设置功能即将上线',
         searchPlaceholder: '搜索标签、风格...', searchTagsLabel: '搜索标签（逗号分隔，不显示在卡片上）',
@@ -809,17 +813,15 @@
         imageMaxHint: '单张图片上限 200KB，将自动压缩',
       },
       en: {
-        tabKol: 'KOL', tabInspiration: 'Web Model', tabCreative: 'Creative', tabAi: 'AI Model', upload: 'Upload',
+        tabKol: 'KOL', tabCreative: 'Creative', tabAi: 'AI Model', upload: 'Upload',
         addCreative: 'Add creative',
         loginRegister: 'Log in / Sign up', login: 'Log in', register: 'Sign up', switchRegister: 'No account? Sign up', switchLogin: 'Have an account? Log in',
         nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Sign in with email to upload or delete',
-        authRequired: 'Please sign in first', saving: 'Saving…', loadFailed: 'Failed to load data. Check Supabase config.',
+        authRequired: 'Please sign in first', saving: 'Saving…', loadFailed: 'Failed to load data. Refresh and try again.',
         confirmPassword: 'Confirm password', privacyNote: 'We only store nickname and avatar URL. Your email is never shown publicly.',
         passwordMismatch: 'Passwords do not match', passwordTooShort: 'Password must be at least 8 characters', invalidEmail: 'Invalid email address',
-        emailNotConfirmed: 'Please confirm your email before signing in', deleteFailed: 'Delete failed. The card was restored.',
-        configMissing: 'Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL / ANON_KEY on Vercel and redeploy.',
-        urlAsApiKey: 'ANON_KEY is wrong: do not use the project URL. Copy the Publishable key (sb_publishable_...) or anon key (eyJ...) from Supabase → Settings → API Keys into NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel, then redeploy.',
-        invalidApiKey: 'Invalid API key. Make sure NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel exactly matches your Supabase Publishable or anon key.',
+        deleteFailed: 'Delete failed. The card was restored.',
+        authExists: 'Email already registered', authInvalid: 'Invalid email or password',
         myFavorites: 'My Favorites', settings: 'Settings', settingsTitle: 'Account settings', avatarUrl: 'Avatar URL', avatarHint: 'Use a public image URL. The top-right avatar updates after save.', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', edit: 'Edit', delete: 'Delete',
         addKol: 'Add KOL', editKol: 'Edit KOL', addWeb: 'Add web model', addAi: 'Add AI model',
@@ -829,7 +831,7 @@
         catPlus: 'Plus size', catGroup: 'Group', catProduct: 'Product / Animal / Landscape',
         catCreativeAll: 'All', catCreativeType: 'Typography', catCreativeBrand: 'Branding',
         catCreativeHoliday: 'Holiday & Seasonal', catCreativeCampaign: 'Campaign', catCreativeTrend: 'Trending',
-        ethAll: 'All', ethWhite: 'Caucasian', ethMiddleEast: 'Middle East', ethLatino: 'Latino', ethBlack: 'African diaspora',
+        ethAll: 'All', ethWhite: 'White', ethMiddleEast: 'Mediterranean', ethLatino: 'Latino', ethBlack: 'African diaspora', ethMixed: 'Mixed / Other',
         genderUnknown: 'Unknown', promptLabel: 'Prompt', detailTags: 'Detail tags (comma, AI only)',
         noPrompt: 'No prompt provided', settingsSoon: 'Settings coming soon',
         searchPlaceholder: 'Search tags, styles...', searchTagsLabel: 'Search tags (comma, hidden on card)',
@@ -846,7 +848,7 @@
       '大码': 'catPlus', '双人/多人': 'catGroup', '产品/动物/风景': 'catProduct',
     };
     const ETH_I18N_KEYS = {
-      '全部': 'ethAll', '欧美白人': 'ethWhite', '中东': 'ethMiddleEast', '拉丁裔': 'ethLatino', '非裔': 'ethBlack', '黑人': 'ethBlack',
+      '全部': 'ethAll', '白人': 'ethWhite', '地中海裔': 'ethMiddleEast', '拉丁裔': 'ethLatino', '非裔': 'ethBlack', '混血及其他': 'ethMixed',
     };
     const CREATIVE_CAT_I18N_KEYS = {
       '全部': 'catCreativeAll', '字体设计': 'catCreativeType', '品牌设计': 'catCreativeBrand',
@@ -854,9 +856,9 @@
     };
 
     let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login' };
-    let supabaseClient = null;
     let authSession = null;
-    let realtimeChannel = null;
+    // DB-backed; keep legacy helpers below for one-time seeding only.
+    let postsStore = [];
     const pendingFiles = { 'kol-image-data': null, 'gallery-image-data': null };
 
     const UNSPLASH_IMAGES = [
@@ -932,21 +934,21 @@
     ];
 
     const DEFAULT_KOLS = [
-      { id: 'kol-1', name: '@Aria_Vibe', account: 'https://www.instagram.com', followers: '286万', gender: '女', region: 'Los Angeles', ethnicity: '欧美白人', accountType: '高冷/复古/Y2K', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&q=80' },
-      { id: 'kol-2', name: '@Omar_Frame', account: 'https://www.instagram.com', followers: '152万', gender: '男', region: '迪拜', ethnicity: '中东', accountType: '街头/暗调', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80' },
+      { id: 'kol-1', name: '@Aria_Vibe', account: 'https://www.instagram.com', followers: '286万', gender: '女', region: 'Los Angeles', ethnicity: '白人', accountType: '高冷/复古/Y2K', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&q=80' },
+      { id: 'kol-2', name: '@Omar_Frame', account: 'https://www.instagram.com', followers: '152万', gender: '男', region: '迪拜', ethnicity: '地中海裔', accountType: '街头/暗调', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80' },
       { id: 'kol-3', name: '@SofiaMood', account: 'https://www.instagram.com', followers: '98万', gender: '女', region: 'São Paulo', ethnicity: '拉丁裔', accountType: '胶片/松弛感', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
-      { id: 'kol-4', name: '@MayaGlow', account: 'https://www.instagram.com', followers: '210万', gender: '女', region: 'Paris', ethnicity: '欧美白人', accountType: '法式优雅/柔光', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&q=80' },
-      { id: 'kol-5', name: '@Kenji_Style', account: 'https://www.instagram.com', followers: '76万', gender: '男', region: 'Tokyo', ethnicity: '欧美白人', accountType: '日系极简/工装', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80' },
-      { id: 'kol-6', name: '@LaylaLens', account: 'https://www.instagram.com', followers: '134万', gender: '女', region: 'Cairo', ethnicity: '中东', accountType: '奢华质感/金调', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80' },
+      { id: 'kol-4', name: '@MayaGlow', account: 'https://www.instagram.com', followers: '210万', gender: '女', region: 'Paris', ethnicity: '白人', accountType: '法式优雅/柔光', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&q=80' },
+      { id: 'kol-5', name: '@Kenji_Style', account: 'https://www.instagram.com', followers: '76万', gender: '男', region: 'Tokyo', ethnicity: '白人', accountType: '日系极简/工装', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80' },
+      { id: 'kol-6', name: '@LaylaLens', account: 'https://www.instagram.com', followers: '134万', gender: '女', region: 'Cairo', ethnicity: '地中海裔', accountType: '奢华质感/金调', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80' },
       { id: 'kol-7', name: '@DiegoWave', account: 'https://www.instagram.com', followers: '88万', gender: '男', region: 'Mexico City', ethnicity: '拉丁裔', accountType: '阳光户外/运动', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80' },
       { id: 'kol-8', name: '@ZaraNoir', account: 'https://www.instagram.com', followers: '165万', gender: '女', region: 'London', ethnicity: '非裔', accountType: '高级时装/暗调', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80' },
-      { id: 'kol-9', name: '@ChrisUrban', account: 'https://www.instagram.com', followers: '54万', gender: '男', region: 'Berlin', ethnicity: '欧美白人', accountType: '街头潮流/高对比', image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=500&q=80' },
-      { id: 'kol-10', name: '@NinaSoft', account: 'https://www.instagram.com', followers: '192万', gender: '女', region: 'Seoul', ethnicity: '欧美白人', accountType: '韩系清透/少女感', image: 'https://images.unsplash.com/photo-1524502397800-2e73479fd698?w=500&q=80' },
-      { id: 'kol-11', name: '@AmirFocus', account: 'https://www.instagram.com', followers: '61万', gender: '男', region: 'Riyadh', ethnicity: '中东', accountType: '商务精英/正装', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&q=80' },
+      { id: 'kol-9', name: '@ChrisUrban', account: 'https://www.instagram.com', followers: '54万', gender: '男', region: 'Berlin', ethnicity: '白人', accountType: '街头潮流/高对比', image: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=500&q=80' },
+      { id: 'kol-10', name: '@NinaSoft', account: 'https://www.instagram.com', followers: '192万', gender: '女', region: 'Seoul', ethnicity: '混血及其他', accountType: '韩系清透/少女感', image: 'https://images.unsplash.com/photo-1524502397800-2e73479fd698?w=500&q=80' },
+      { id: 'kol-11', name: '@AmirFocus', account: 'https://www.instagram.com', followers: '61万', gender: '男', region: 'Riyadh', ethnicity: '地中海裔', accountType: '商务精英/正装', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=500&q=80' },
       { id: 'kol-12', name: '@CamilaHue', account: 'https://www.instagram.com', followers: '117万', gender: '女', region: 'Buenos Aires', ethnicity: '拉丁裔', accountType: '色彩鲜明/度假风', image: 'https://images.unsplash.com/photo-1488426862026-3ee93a40d838?w=500&q=80' },
       { id: 'kol-13', name: '@JordanFit', account: 'https://www.instagram.com', followers: '93万', gender: '男', region: 'Atlanta', ethnicity: '非裔', accountType: '健身活力/明快', image: 'https://images.unsplash.com/photo-1564564321837-a57b93a2d841?w=500&q=80' },
-      { id: 'kol-14', name: '@ElenaMuse', account: 'https://www.instagram.com', followers: '248万', gender: '女', region: 'Milan', ethnicity: '欧美白人', accountType: '杂志大片/冷艳', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80' },
-      { id: 'kol-15', name: '@PriyaGlow', account: 'https://www.instagram.com', followers: '72万', gender: '女', region: 'Mumbai', ethnicity: '中东', accountType: '民族风/珠宝点缀', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80' },
+      { id: 'kol-14', name: '@ElenaMuse', account: 'https://www.instagram.com', followers: '248万', gender: '女', region: 'Milan', ethnicity: '白人', accountType: '杂志大片/冷艳', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80' },
+      { id: 'kol-15', name: '@PriyaGlow', account: 'https://www.instagram.com', followers: '72万', gender: '女', region: 'Mumbai', ethnicity: '混血及其他', accountType: '民族风/珠宝点缀', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80' },
     ];
 
     let state = { kols: [], inspiration: [], creative: [], aiModels: [], filterKolEthnicity: '全部', filterInspiration: '全部', filterCreative: '全部', filterAi: '全部', searchQuery: '' };
@@ -988,8 +990,13 @@
     }
 
     function normalizeKolEthnicity(eth) {
-      if (eth === '黑人') return '非裔';
-      return eth || '欧美白人';
+      const v = String(eth || '').trim();
+      if (!v) return '白人';
+      if (v === '黑人' || v === '非裔') return '非裔';
+      if (v === '中东' || v === '中东裔') return '地中海裔';
+      if (v === '欧美白人') return '白人';
+      if (v === '混血' || v === '其他') return '混血及其他';
+      return v;
     }
 
     function migrateKolItem(k) {
@@ -1055,162 +1062,78 @@
       } catch (e) { console.warn('save meta failed', e); }
     }
 
-    function getSupabaseConfig() {
-      return window.CREATORLOOK_CONFIG || {};
+    function readAuthUsers() {
+      try { return JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}'); } catch { return {}; }
     }
 
-    let configLoadError = null;
-
-    /** Supabase createClient 只需要项目根 URL，不能带 /rest/v1 等后缀 */
-    function normalizeSupabaseUrl(raw) {
-      const value = String(raw || '').trim();
-      if (!value) return '';
-      try {
-        return new URL(value).origin.replace(/\/+$/, '');
-      } catch {
-        return '';
-      }
+    function writeAuthUsers(users) {
+      localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
     }
 
-    function normalizeSupabaseAnonKey(raw) {
-      const key = String(raw || '').trim();
-      if (!key) return { key: '', error: 'empty' };
-      if (/^https?:\/\//i.test(key) || key.includes('.supabase.co')) {
-        return { key: '', error: 'url_as_key' };
-      }
-      if (key.startsWith('sb_secret_')) {
-        return { key: '', error: 'secret_key' };
-      }
-      const ok = key.startsWith('eyJ') || key.startsWith('sb_publishable_');
-      if (!ok) return { key: '', error: 'format' };
-      return { key, error: null };
+    function readProfiles() {
+      try { return JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}'); } catch { return {}; }
     }
 
-    function configErrorMessage(errorCode) {
-      if (errorCode === 'url_as_key') return t('urlAsApiKey');
-      if (errorCode === 'secret_key') {
-        return appMeta.lang === 'en'
-          ? 'Do not use sb_secret_ key in the browser. Use Publishable or anon key instead.'
-          : '浏览器不能使用 sb_secret_ 密钥，请改用 Publishable key 或 anon key。';
-      }
-      if (errorCode === 'format') return t('invalidApiKey');
-      return t('configMissing');
-    }
-
-    function loadConfigScript(src) {
-      return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[data-config-src="${src}"]`);
-        if (existing) {
-          existing.addEventListener('load', () => resolve(), { once: true });
-          existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
-          return;
-        }
-        const script = document.createElement('script');
-        script.src = src;
-        script.dataset.configSrc = src;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Failed to load ${src}`));
-        document.head.appendChild(script);
-      });
-    }
-
-    async function loadRuntimeConfig() {
-      configLoadError = null;
-      const sources = ['/api/config', 'config.js'];
-      for (const src of sources) {
-        try {
-          await loadConfigScript(src);
-          const cfg = getSupabaseConfig();
-          const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
-          const keyResult = normalizeSupabaseAnonKey(cfg.SUPABASE_ANON_KEY);
-          if (url && keyResult.key) {
-            window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: keyResult.key };
-            return true;
-          }
-          if (keyResult.error) configLoadError = keyResult.error;
-        } catch (err) {
-          console.warn('[CreatorLook] config source failed:', src, err.message);
-        }
-      }
-      return false;
-    }
-
-    function initSupabaseClient() {
-      const cfg = getSupabaseConfig();
-      const url = normalizeSupabaseUrl(cfg.SUPABASE_URL);
-      const keyResult = normalizeSupabaseAnonKey(cfg.SUPABASE_ANON_KEY);
-      if (!url || !keyResult.key) {
-        if (keyResult.error) configLoadError = keyResult.error;
-        console.warn(t('configMissing'), { url: url || '(empty)', keyError: keyResult.error || 'empty' });
-        return false;
-      }
-      if (!window.supabase?.createClient) {
-        console.error('Supabase JS SDK not loaded');
-        return false;
-      }
-      supabaseClient = window.supabase.createClient(url, keyResult.key, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-      });
-      window.CREATORLOOK_CONFIG = { ...cfg, SUPABASE_URL: url, SUPABASE_ANON_KEY: keyResult.key };
-      try {
-        const origin = new URL(url).origin;
-        if (!document.querySelector(`link[data-supabase-preconnect="${origin}"]`)) {
-          const link = document.createElement('link');
-          link.rel = 'preconnect';
-          link.href = origin;
-          link.crossOrigin = 'anonymous';
-          link.dataset.supabasePreconnect = origin;
-          document.head.appendChild(link);
-        }
-      } catch (_) { /* ignore */ }
-      console.info('[CreatorLook] Supabase client ready');
-      return true;
+    function writeProfiles(profiles) {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles));
     }
 
     function onAuthSession(session) {
       authSession = session;
       if (session?.user) {
-        const meta = session.user.user_metadata || {};
+        const profile = readProfiles()[session.user.id] || {};
         appMeta.user = {
           email: session.user.email || '',
-          nickname: meta.nickname || session.user.email?.split('@')[0] || 'User',
+          nickname: profile.nickname || session.user.nickname || session.user.email?.split('@')[0] || 'User',
           accountType: 'pro',
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || session.user.id)}`,
+          avatar: profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || session.user.id)}`,
         };
       } else {
         appMeta.user = null;
       }
       updateUserUI();
-
-      // Load saved profile (nickname/avatar_url) from DB after login
-      if (session?.user?.id) {
-        void loadProfileFromDb(session.user.id);
-      }
     }
 
-    async function loadProfileFromDb(userId) {
-      if (!supabaseClient || !authSession) return;
+    function initAuth() {
       try {
-        const { data, error } = await supabaseClient
-          .from('profiles')
-          .select('nickname, avatar_url')
-          .eq('id', userId)
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) return;
-        if (data.nickname) appMeta.user.nickname = data.nickname;
-        if (data.avatar_url) appMeta.user.avatar = data.avatar_url;
-        updateUserUI();
-      } catch (err) {
-        console.warn('[CreatorLook] load profile failed:', err?.message || err);
+        const raw = localStorage.getItem(AUTH_SESSION_KEY);
+        onAuthSession(raw ? JSON.parse(raw) : null);
+      } catch {
+        onAuthSession(null);
       }
     }
 
-    async function initAuth() {
-      if (!supabaseClient) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
+    function persistAuthSession(session) {
+      if (session) localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+      else localStorage.removeItem(AUTH_SESSION_KEY);
       onAuthSession(session);
-      supabaseClient.auth.onAuthStateChange((_event, session) => onAuthSession(session));
+    }
+
+    function registerLocalUser({ email, password, nickname }) {
+      const users = readAuthUsers();
+      if (users[email]) return { error: t('authExists') };
+      const id = crypto.randomUUID();
+      users[email] = { id, password, nickname };
+      writeAuthUsers(users);
+      const profiles = readProfiles();
+      profiles[id] = { nickname, avatar_url: null };
+      writeProfiles(profiles);
+      const session = { user: { id, email, nickname } };
+      persistAuthSession(session);
+      return { session };
+    }
+
+    function loginLocalUser({ email, password }) {
+      const users = readAuthUsers();
+      const record = users[email];
+      if (!record || record.password !== password) return { error: t('authInvalid') };
+      const session = { user: { id: record.id, email, nickname: record.nickname } };
+      persistAuthSession(session);
+      return { session };
+    }
+
+    function logoutLocalUser() {
+      persistAuthSession(null);
     }
 
     function requireAuth() {
@@ -1275,68 +1198,155 @@
       });
     }
 
+    function syncPostsStoreFromState() {
+      postsStore = [...state.kols.map((item) => item.raw), ...state.inspiration.map((item) => item.raw), ...state.aiModels.map((item) => item.raw), ...state.creative.map((item) => item.raw)];
+      savePostsStore();
+    }
+
+    function loadPostsStore() {
+      try {
+        const raw = localStorage.getItem(POSTS_STORAGE_KEY);
+        if (raw) {
+          postsStore = JSON.parse(raw);
+          return;
+        }
+      } catch (err) {
+        console.warn('[CreatorLook] load posts failed', err);
+      }
+      postsStore = buildSeedPosts();
+      savePostsStore();
+    }
+
+    function loadStoredPostsOrSeed() {
+      loadPostsStore();
+      if (postsStore.length) return;
+      postsStore = buildSeedPosts();
+      savePostsStore();
+    }
+
+    function savePostsStore() {
+      localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(postsStore));
+    }
+
+    function buildSeedPosts() {
+      const now = new Date().toISOString();
+      const kolRows = DEFAULT_KOLS.map((kol) => ({
+        id: kol.id,
+        image_url: kol.image,
+        storage_path: null,
+        title: kol.name,
+        fans: kol.followers,
+        category: 'kol',
+        metadata: {
+          account: kol.account,
+          gender: kol.gender,
+          region: kol.region,
+          ethnicity: kol.ethnicity,
+          accountType: kol.accountType,
+        },
+        created_at: now,
+        created_by: null,
+      }));
+      const inspirationRows = UNSPLASH_IMAGES.map((item) => ({
+        id: item.id,
+        image_url: item.image,
+        storage_path: null,
+        title: null,
+        fans: null,
+        category: 'net_model',
+        metadata: { subcategory: item.category, style: item.style },
+        created_at: now,
+        created_by: null,
+      }));
+      const creativeRows = CREATIVE_MOCK.map((item) => ({
+        id: item.id,
+        image_url: item.image,
+        storage_path: null,
+        title: null,
+        fans: null,
+        category: 'inspiration',
+        metadata: { subcategory: item.category, style: item.style },
+        created_at: now,
+        created_by: null,
+      }));
+      return [...kolRows, ...inspirationRows, ...creativeRows];
+    }
+
+    function applySeedPostsIfNeeded(reason = '') {
+      if (!postsStore.length) loadStoredPostsOrSeed();
+      applyPostsToState(postsStore);
+      if (reason) console.info(`[CreatorLook] using local seed posts: ${reason}`);
+    }
+
     async function fetchAllPosts() {
-      if (!supabaseClient) return;
-      const { data, error } = await supabaseClient
-        .from('posts')
-        .select('id, image_url, storage_path, title, fans, category, metadata, created_at')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      applyPostsToState(data || []);
+      try {
+        const res = await fetch('/api/posts');
+        if (!res.ok) throw new Error(`fetch posts failed: ${res.status}`);
+        const json = await res.json();
+        const rows = json.items || [];
+        if (!rows.length) {
+          loadStoredPostsOrSeed();
+          applyPostsToState(postsStore);
+          console.info('[CreatorLook] restored posts from local cache after empty api response');
+          return;
+        }
+        applyPostsToState(rows);
+        postsStore = rows;
+        savePostsStore();
+      } catch (err) {
+        console.warn('[CreatorLook] falling back to local seed data', err);
+        loadStoredPostsOrSeed();
+        applyPostsToState(postsStore);
+      }
     }
 
-    async function uploadImageToStorage(file, category) {
-      const cfg = getSupabaseConfig();
-      const bucket = cfg.STORAGE_BUCKET || 'creator_bucket';
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      const uid = user?.id || 'anonymous';
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/gi, '') || 'jpg';
-      const path = `${category}/${uid}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabaseClient.storage
-        .from(bucket)
-        .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'image/jpeg' });
-      if (uploadError) throw uploadError;
-      const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
-      return { imageUrl: data.publicUrl, storagePath: path };
+    async function uploadImageToStorage(file) {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`upload failed: ${res.status}`);
+      return await res.json();
     }
 
-    async function deleteStorageFile(storagePath) {
-      if (!storagePath) return;
-      const cfg = getSupabaseConfig();
-      const bucket = cfg.STORAGE_BUCKET || 'creator_bucket';
-      const { error } = await supabaseClient.storage.from(bucket).remove([storagePath]);
-      if (error) console.warn('storage delete', error);
-    }
+    async function deleteStorageFile() {}
 
     async function insertPost({ category, title, fans, imageUrl, storagePath, metadata }) {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      const { error } = await supabaseClient.from('posts').insert({
-        category,
-        title: title || null,
-        fans: fans || null,
-        image_url: imageUrl,
-        storage_path: storagePath,
-        metadata: metadata || {},
-        created_by: user?.id || null,
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          title: title || null,
+          fans: fans || null,
+          image_url: imageUrl,
+          storage_path: storagePath || null,
+          metadata: metadata || {},
+          created_by: authSession?.user?.id || null,
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(`insert failed: ${res.status}`);
+      return await res.json();
     }
 
     async function updatePost({ id, title, fans, imageUrl, storagePath, metadata }) {
-      const { error } = await supabaseClient.from('posts').update({
-        title: title || null,
-        fans: fans || null,
-        image_url: imageUrl,
-        storage_path: storagePath || null,
-        metadata: metadata || {},
-      }).eq('id', id);
-      if (error) throw error;
+      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title || null,
+          fans: fans || null,
+          image_url: imageUrl,
+          storage_path: storagePath || null,
+          metadata: metadata || {},
+        }),
+      });
+      if (!res.ok) throw new Error(`update failed: ${res.status}`);
+      return await res.json();
     }
 
-    async function deletePostById(id, storagePath) {
-      const { error } = await supabaseClient.from('posts').delete().eq('id', id);
-      if (error) throw error;
-      await deleteStorageFile(storagePath);
+    async function deletePostById(id) {
+      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) throw new Error(`delete failed: ${res.status}`);
     }
 
     function removePostFromState(category, id) {
@@ -1344,6 +1354,7 @@
       else if (category === 'net_model') state.inspiration = state.inspiration.filter((i) => i.id !== id);
       else if (category === 'ai_model') state.aiModels = state.aiModels.filter((i) => i.id !== id);
       else if (category === 'inspiration') state.creative = state.creative.filter((i) => i.id !== id);
+      syncPostsStoreFromState();
     }
 
     function addPostToState(row) {
@@ -1354,6 +1365,7 @@
       else if (row.category === 'net_model') state.inspiration.unshift(postToMedia(row));
       else if (row.category === 'ai_model') state.aiModels.unshift(postToMedia(row));
       else if (row.category === 'inspiration') state.creative.unshift(postToMedia(row));
+      syncPostsStoreFromState();
     }
 
     function replacePostInState(row) {
@@ -1363,6 +1375,7 @@
       else if (row.category === 'net_model') state.inspiration.unshift(postToMedia(row));
       else if (row.category === 'ai_model') state.aiModels.unshift(postToMedia(row));
       else if (row.category === 'inspiration') state.creative.unshift(postToMedia(row));
+      syncPostsStoreFromState();
     }
 
     function renderByCategory(category) {
@@ -1372,28 +1385,7 @@
       else if (category === 'inspiration') renderCreative();
     }
 
-    function subscribePostsRealtime() {
-      if (!supabaseClient || realtimeChannel) return;
-      realtimeChannel = supabaseClient
-        .channel('creatorlook-posts')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
-          addPostToState(payload.new);
-          renderByCategory(payload.new.category);
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
-          if (!payload.new?.id) return;
-          replacePostInState(payload.new);
-          renderByCategory(payload.new.category);
-        })
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
-          const cat = payload.old?.category;
-          const id = payload.old?.id;
-          if (!id) return;
-          removePostFromState(cat, id);
-          renderByCategory(cat);
-        })
-        .subscribe();
-    }
+    function subscribePostsRealtime() {}
 
     function findItemWithStorage(type, id) {
       if (type === 'kol') return state.kols.find((k) => k.id === id);
@@ -1822,6 +1814,10 @@
     function openModal(id){const el=document.getElementById(id);el.classList.remove('hidden');el.classList.add('flex');}
     function closeModal(id){const el=document.getElementById(id);el.classList.add('hidden');el.classList.remove('flex');}
 
+    function shouldIgnoreOverlayClose(target) {
+      return window.getSelection && window.getSelection().toString().trim() && target && target.closest?.('input, textarea, select, option, button, a, label');
+    }
+
     function renderKolEthnicityFilters() {
       const c = document.getElementById('filter-kol-ethnicity');
       c.innerHTML = KOL_ETHNICITY.map((cat)=>`<button data-eth="${cat}" class="filter-link ${state.filterKolEthnicity===cat?'filter-link-active':''}">${esc(tEth(cat))}</button>`).join('');
@@ -1853,6 +1849,10 @@
       return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>';
     }
 
+    function viewArrowSvg() {
+      return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h12"/><path d="m13 6 6 6-6 6"/></svg>';
+    }
+
     function renderKols() {
       const grid = document.getElementById('kol-grid');
       let list = state.filterKolEthnicity === '全部'
@@ -1875,7 +1875,7 @@
             <p class="kol-desc">${kolDescHtml(kol.accountType)}</p>
             <div class="mt-3 flex items-center justify-between gap-2">
               <span class="kol-followers">${followersIconSvg()}<span>${esc(kol.followers || '—')}</span></span>
-              <a href="${esc(kol.account || '#')}" target="_blank" rel="noopener" class="kol-profile-btn">${esc(t('viewProfile'))}</a>
+              <a href="${esc(kol.account || '#')}" target="_blank" rel="noopener" class="kol-profile-link" aria-label="${esc(t('viewProfile'))}" title="${esc(t('viewProfile'))}">${viewArrowSvg()}</a>
             </div>
           </div>
         </div>
@@ -1896,7 +1896,7 @@
       f.followers.value = kol.followers || '';
       f.gender.value = kol.gender || '女';
       f.region.value = kol.region || '';
-      f.ethnicity.value = kol.ethnicity || '欧美白人';
+      f.ethnicity.value = kol.ethnicity || '白人';
       f.accountType.value = kol.accountType || '';
       f.searchTags.value = (kol.searchTags || []).join(', ');
       setDropZoneImage('kol-image-data', kol.image || '');
@@ -1914,7 +1914,7 @@
 
     document.getElementById('form-kol').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!requireAuth() || !supabaseClient) return;
+      if (!requireAuth()) return;
       const f = e.target;
       const editId = document.getElementById('kol-id').value.trim();
       const existingKol = editId ? state.kols.find((k) => k.id === editId) : null;
@@ -1970,6 +1970,8 @@
             ...payload,
           });
         }
+        await fetchAllPosts();
+        renderKols();
         closeModal('modal-kol');
         clearDropZone('kol-image-data');
         document.getElementById('kol-id').value = '';
@@ -2098,7 +2100,7 @@
     }
 
     async function handleDeleteByContext(type, id) {
-      if (!requireAuth() || !supabaseClient) return;
+      if (!requireAuth()) return;
       if (!confirm(t('confirmDelete'))) return;
       const item = findItemWithStorage(type, id);
       if (!item) return;
@@ -2108,7 +2110,7 @@
       removePostFromState(postCategory, id);
       renderByCategory(postCategory);
       try {
-        await deletePostById(id, snapshot.storagePath);
+        await deletePostById(id);
       } catch (err) {
         console.error(err);
         restoreDeletedItem(type, id, snapshot);
@@ -2118,11 +2120,11 @@
 
     function showContextMenuAt(x, y, target) {
       contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
-      const isKol = contextTarget.type === 'kol';
-      contextEditBtn.classList.toggle('hidden', !isKol);
+      const canEdit = true;
+      contextEditBtn.classList.toggle('hidden', !canEdit);
       contextMenu.classList.remove('hidden');
       const menuWidth = 152;
-      const menuHeight = isKol ? 88 : 44;
+      const menuHeight = 88;
       const left = Math.min(x, window.innerWidth - menuWidth - 8);
       const top = Math.min(y, window.innerHeight - menuHeight - 8);
       contextMenu.style.left = `${left}px`;
@@ -2205,7 +2207,7 @@
 
     document.getElementById('form-gallery').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!requireAuth() || !supabaseClient) return;
+      if (!requireAuth()) return;
       const f = e.target;
       const type = document.getElementById('gallery-type').value;
       const postCategory = POST_CATEGORIES[type];
@@ -2240,6 +2242,8 @@
           storagePath,
           metadata,
         });
+        await fetchAllPosts();
+        renderByCategory(postCategory);
         closeModal('modal-gallery');
         clearDropZone('gallery-image-data');
       } catch (err) {
@@ -2309,7 +2313,6 @@
     });
     document.getElementById('form-auth').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!supabaseClient) { alert(t('configMissing')); return; }
       const f = e.target;
       const email = f.email.value.trim().toLowerCase();
       const password = f.password.value;
@@ -2324,39 +2327,23 @@
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
-        if (appMeta.authMode === 'register') {
-          const { data, error } = await supabaseClient.auth.signUp({
-            email,
-            password,
-            options: { data: { nickname }, emailRedirectTo: window.location.origin },
-          });
-          if (error) throw error;
-          if (data.user && !data.session) {
-            alert(appMeta.lang === 'en' ? 'Check your email to confirm signup before signing in.' : '注册成功，请先到邮箱点击确认链接后再登录。');
-          } else {
-            closeModal('modal-auth');
-          }
-        } else {
-          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-          if (data.user && !data.user.email_confirmed_at) {
-            await supabaseClient.auth.signOut();
-            alert(t('emailNotConfirmed'));
-            return;
-          }
-          closeModal('modal-auth');
+        const result = appMeta.authMode === 'register'
+          ? registerLocalUser({ email, password, nickname })
+          : loginLocalUser({ email, password });
+        if (result.error) {
+          alert(result.error);
+          return;
         }
+        closeModal('modal-auth');
       } catch (err) {
         console.error(err);
-        const msg = err.message || String(err);
-        if (/email not confirmed/i.test(msg)) alert(t('emailNotConfirmed'));
-        else alert(msg);
+        alert(err.message || String(err));
       } finally {
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('login'); }
       }
     });
-    document.getElementById('menu-logout').addEventListener('click', async () => {
-      if (supabaseClient) await supabaseClient.auth.signOut();
+    document.getElementById('menu-logout').addEventListener('click', () => {
+      logoutLocalUser();
       document.getElementById('user-menu').classList.add('hidden');
     });
 
@@ -2388,20 +2375,18 @@
     }
 
     async function saveSettings(nickname, avatarUrl) {
-      if (!supabaseClient || !authSession?.user?.id) throw new Error('NOT_AUTHENTICATED');
+      if (!authSession?.user?.id) throw new Error('NOT_AUTHENTICATED');
       const userId = authSession.user.id;
-      const payload = {
-        id: userId,
+      const profiles = readProfiles();
+      profiles[userId] = {
         nickname: nickname || null,
         avatar_url: avatarUrl || null,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabaseClient.from('profiles').upsert(payload);
-      if (error) throw error;
+      writeProfiles(profiles);
       if (nickname) appMeta.user.nickname = nickname;
       if (avatarUrl) appMeta.user.avatar = avatarUrl;
       if (!avatarUrl) {
-        // revert to deterministic fallback when empty
         appMeta.user.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appMeta.user?.email || userId)}`;
       }
       updateUserUI();
@@ -2443,7 +2428,7 @@
 
     ['modal-kol', 'modal-gallery', 'modal-auth', 'modal-settings'].forEach((id) => {
       const m = document.getElementById(id);
-      if (m) m.addEventListener('click', (e) => { if (e.target === m) closeModal(id); });
+      if (m) m.addEventListener('click', (e) => { if (e.target === m && !window.getSelection().toString().trim()) closeModal(id); });
     });
     document.querySelectorAll('.modal-close').forEach((b) => {
       if (!b.dataset.modal) return;
@@ -2468,23 +2453,14 @@
       loadMeta();
       switchSubheader('kol');
       document.getElementById('global-search').value = state.searchQuery || '';
-      toggleUploadButtons(false);
-
-      const configOk = await loadRuntimeConfig();
-      if (!configOk || !initSupabaseClient()) {
-        alert(configErrorMessage(configLoadError));
-        applyI18n();
-        return;
-      }
-      await initAuth();
+      initAuth();
+      toggleUploadButtons(!!authSession);
       try {
         await fetchAllPosts();
         applyI18n();
-        subscribePostsRealtime();
       } catch (err) {
         console.error(err);
-        const msg = /invalid api key/i.test(err.message || '') ? t('invalidApiKey') : t('loadFailed');
-        alert(msg + '\n' + (err.message || ''));
+        alert(t('loadFailed') + '\n' + (err.message || ''));
         applyI18n();
       }
     }
