@@ -32,6 +32,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     html { scroll-behavior: smooth; }
     body {
@@ -765,6 +766,13 @@
     const AUTH_USERS_KEY = 'kol-inspiration-auth-users-v1';
     const AUTH_SESSION_KEY = 'kol-inspiration-auth-session-v1';
     const PROFILE_STORAGE_KEY = 'kol-inspiration-profile-v1';
+    const SUPABASE_URL = 'https://ofcyczagljdoibputrzu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_DtzsmukDgEzGjkU14WnsQg_rYtVo7Wa';
+    const SUPABASE_BUCKET = 'creator_bucket';
+    const SUPABASE_POSTS_TABLE = 'posts';
+    const SUPABASE_STORAGE_BASE = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}`;
+    const SUPABASE = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_READY = !!SUPABASE && !!SUPABASE_BUCKET && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
     const POST_CATEGORIES = {
       kol: 'kol',
       inspiration: 'net_model',
@@ -781,6 +789,8 @@
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
     const KOL_ETHNICITY = ['全部', '白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
+    const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
+    const KOL_ETHNICITY_UI_TO_DB = { '白人': '白人', '地中海裔': '地中海裔', '拉丁裔': '拉丁裔', '非裔': '非裔', '混血及其他': '混血及其他' };
 
     const I18N = {
       zh: {
@@ -992,11 +1002,11 @@
     function normalizeKolEthnicity(eth) {
       const v = String(eth || '').trim();
       if (!v) return '白人';
-      if (v === '黑人' || v === '非裔') return '非裔';
-      if (v === '中东' || v === '中东裔') return '地中海裔';
-      if (v === '欧美白人') return '白人';
-      if (v === '混血' || v === '其他') return '混血及其他';
-      return v;
+      return KOL_ETHNICITY_DB_TO_UI[v] || v;
+    }
+
+    function uiEthnicityToDb(eth) {
+      return KOL_ETHNICITY_UI_TO_DB[String(eth || '').trim()] || String(eth || '').trim() || '白人';
     }
 
     function migrateKolItem(k) {
@@ -1278,75 +1288,78 @@
       if (reason) console.info(`[CreatorLook] using local seed posts: ${reason}`);
     }
 
+    function toSupabaseUrl(row) {
+      const raw = row?.image_url || row?.imageUrl || '';
+      if (!raw) return '';
+      if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+      return `${SUPABASE_STORAGE_BASE}/${String(raw).replace(/^\/+/, '')}`;
+    }
+
     async function fetchAllPosts() {
-      try {
-        const res = await fetch('/api/posts');
-        if (!res.ok) throw new Error(`fetch posts failed: ${res.status}`);
-        const json = await res.json();
-        const rows = json.items || [];
-        if (!rows.length) {
-          loadStoredPostsOrSeed();
-          applyPostsToState(postsStore);
-          console.info('[CreatorLook] restored posts from local cache after empty api response');
-          return;
-        }
-        applyPostsToState(rows);
-        postsStore = rows;
-        savePostsStore();
-      } catch (err) {
-        console.warn('[CreatorLook] falling back to local seed data', err);
-        loadStoredPostsOrSeed();
-        applyPostsToState(postsStore);
-      }
+      const { data, error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).select('*').order('created_at', { ascending: false }).limit(500);
+      if (error) throw error;
+      const rows = (data || []).map((row) => ({
+        id: row.id,
+        image_url: toSupabaseUrl(row),
+        storage_path: row.storage_path,
+        title: row.title,
+        fans: row.fans,
+        category: row.category,
+        metadata: row.metadata || {},
+        created_at: row.created_at,
+        created_by: row.created_by,
+      }));
+      applyPostsToState(rows);
+      postsStore = rows;
+      savePostsStore();
     }
 
     async function uploadImageToStorage(file) {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error(`upload failed: ${res.status}`);
-      return await res.json();
+      const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase();
+      const filePath = `uploads/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await SUPABASE.storage.from(SUPABASE_BUCKET).upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'image/jpeg',
+      });
+      if (uploadError) throw uploadError;
+      const { data } = SUPABASE.storage.from(SUPABASE_BUCKET).getPublicUrl(filePath);
+      return { imageUrl: data.publicUrl, storagePath: filePath, provider: 'supabase' };
     }
 
     async function deleteStorageFile() {}
 
     async function insertPost({ category, title, fans, imageUrl, storagePath, metadata }) {
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category,
-          title: title || null,
-          fans: fans || null,
-          image_url: imageUrl,
-          storage_path: storagePath || null,
-          metadata: metadata || {},
-          created_by: authSession?.user?.id || null,
-        }),
-      });
-      if (!res.ok) throw new Error(`insert failed: ${res.status}`);
-      return await res.json();
+      const payload = {
+        image_url: imageUrl,
+        storage_path: storagePath || null,
+        title: title || null,
+        fans: fans || null,
+        category,
+        metadata: metadata || {},
+        created_by: authSession?.user?.id || null,
+      };
+      const { data, error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).insert(payload).select().single();
+      if (error) throw error;
+      return data;
     }
 
     async function updatePost({ id, title, fans, imageUrl, storagePath, metadata }) {
-      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title || null,
-          fans: fans || null,
-          image_url: imageUrl,
-          storage_path: storagePath || null,
-          metadata: metadata || {},
-        }),
-      });
-      if (!res.ok) throw new Error(`update failed: ${res.status}`);
-      return await res.json();
+      const payload = {
+        title: title || null,
+        fans: fans || null,
+        image_url: imageUrl,
+        storage_path: storagePath || null,
+        metadata: metadata || {},
+      };
+      const { data, error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).update(payload).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
     }
 
     async function deletePostById(id) {
-      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (!res.ok && res.status !== 204) throw new Error(`delete failed: ${res.status}`);
+      const { error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).delete().eq('id', id);
+      if (error) throw error;
     }
 
     function removePostFromState(category, id) {
@@ -1896,7 +1909,7 @@
       f.followers.value = kol.followers || '';
       f.gender.value = kol.gender || '女';
       f.region.value = kol.region || '';
-      f.ethnicity.value = kol.ethnicity || '白人';
+      f.ethnicity.value = uiEthnicityToDb(kol.ethnicity || '白人');
       f.accountType.value = kol.accountType || '';
       f.searchTags.value = (kol.searchTags || []).join(', ');
       setDropZoneImage('kol-image-data', kol.image || '');
@@ -1944,7 +1957,7 @@
           account: f.account.value.trim(),
           gender: f.gender.value,
           region: f.region.value.trim(),
-          ethnicity: f.ethnicity.value,
+          ethnicity: uiEthnicityToDb(f.ethnicity.value),
           accountType: f.accountType.value.trim(),
           searchTags: searchTags.length ? searchTags : buildKolSearchTags({
             name: f.name.value.trim(),
