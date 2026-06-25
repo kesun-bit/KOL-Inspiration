@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CreatorLook</title>
-  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="icon" href="assets/favicon.ico" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -787,6 +788,7 @@
     };
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
+    const AI_CATEGORIES = ['全部', '图片编辑', '人像', '发型', 'AI工具', 'AI效果', '节日氛围'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
     const KOL_ETHNICITY = ['全部', '白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
     const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
@@ -1668,7 +1670,7 @@
       renderKolEthnicityFilters();
       renderFilters('filter-inspiration', 'filterInspiration', renderInspiration);
       renderCreativeFilters();
-      renderFilters('filter-ai', 'filterAi', renderAi);
+      renderFilters('filter-ai', 'filterAi', renderAi, AI_CATEGORIES, (cat) => cat);
       renderKols();
       renderInspiration();
       renderCreative();
@@ -2000,6 +2002,7 @@
       const c=document.getElementById(containerId);
       let list=filter==='全部'?items:items.filter((i)=>i.category===filter);
       const tab = getActiveTab();
+      const loggedIn = !!appMeta.user;
       if (state.searchQuery.trim()) {
         if (mode === 'web' && tab === 'inspiration') {
           list = list.filter((i) => matchesSearch(buildInspirationSearchTags(i), i.style));
@@ -2009,6 +2012,7 @@
           list = list.filter((i) => matchesSearch(buildAiSearchTags(i), i.prompt || i.style));
         }
       }
+      if(!loggedIn) list = list.slice(0, 12);
       if(!list.length){
         const searching = state.searchQuery.trim() && (
           (mode === 'web' && tab === 'inspiration') ||
@@ -2192,8 +2196,8 @@
 
     function populateGalleryCategories(type) {
       const categorySelect = document.getElementById('gallery-category-select');
-      const categories = type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES;
-      const labelFn = type === 'creative' ? tCreativeCat : tCat;
+      const categories = type === 'ai' ? AI_CATEGORIES : (type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES);
+      const labelFn = type === 'creative' ? tCreativeCat : (type === 'ai' ? t : tCat);
       categorySelect.innerHTML = '';
       categories.filter((c) => c !== '全部').forEach((c) => {
         const o = document.createElement('option');
