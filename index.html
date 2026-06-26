@@ -764,15 +764,14 @@
   <script>
     const STORAGE_KEY = 'kol-inspiration-app-v2';
     const POSTS_STORAGE_KEY = 'kol-inspiration-posts-v1';
-    const AUTH_USERS_KEY = 'kol-inspiration-auth-users-v1';
-    const AUTH_SESSION_KEY = 'kol-inspiration-auth-session-v1';
-    const PROFILE_STORAGE_KEY = 'kol-inspiration-profile-v1';
     const SUPABASE_URL = 'https://ofcyczagljdoibputrzu.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_DtzsmukDgEzGjkU14WnsQg_rYtVo7Wa';
     const SUPABASE_BUCKET = 'creator_bucket';
     const SUPABASE_POSTS_TABLE = 'posts';
     const SUPABASE_STORAGE_BASE = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}`;
-    const SUPABASE = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    });
     const SUPABASE_READY = !!SUPABASE && !!SUPABASE_BUCKET && !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
     const POST_CATEGORIES = {
       kol: 'kol',
@@ -804,6 +803,7 @@
         confirmPassword: '确认密码', privacyNote: '我们仅存储昵称与头像链接，邮箱不会公开展示。',
         passwordMismatch: '两次密码不一致', passwordTooShort: '密码至少 8 位', invalidEmail: '邮箱格式不正确',
         deleteFailed: '删除失败，已恢复该卡片',
+        emailNotConfirmed: '请先前往邮箱点击确认链接后再登录',
         authExists: '该邮箱已注册', authInvalid: '邮箱或密码错误',
         myFavorites: '我的收藏', settings: '设置', settingsTitle: '账号设置', avatarUrl: '头像链接', avatarHint: '支持公开图片 URL，保存后右上角头像会更新。', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', edit: '编辑', delete: '删除',
@@ -833,6 +833,7 @@
         confirmPassword: 'Confirm password', privacyNote: 'We only store nickname and avatar URL. Your email is never shown publicly.',
         passwordMismatch: 'Passwords do not match', passwordTooShort: 'Password must be at least 8 characters', invalidEmail: 'Invalid email address',
         deleteFailed: 'Delete failed. The card was restored.',
+        emailNotConfirmed: 'Please confirm your email before signing in',
         authExists: 'Email already registered', authInvalid: 'Invalid email or password',
         myFavorites: 'My Favorites', settings: 'Settings', settingsTitle: 'Account settings', avatarUrl: 'Avatar URL', avatarHint: 'Use a public image URL. The top-right avatar updates after save.', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', edit: 'Edit', delete: 'Delete',
@@ -1074,82 +1075,57 @@
       } catch (e) { console.warn('save meta failed', e); }
     }
 
-    function readAuthUsers() {
-      try { return JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}'); } catch { return {}; }
-    }
-
-    function writeAuthUsers(users) {
-      localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
-    }
-
-    function readProfiles() {
-      try { return JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}'); } catch { return {}; }
-    }
-
-    function writeProfiles(profiles) {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles));
-    }
-
     function onAuthSession(session) {
       authSession = session;
       if (session?.user) {
-        const profile = readProfiles()[session.user.id] || {};
+        const meta = session.user.user_metadata || {};
         appMeta.user = {
           email: session.user.email || '',
-          nickname: profile.nickname || session.user.nickname || session.user.email?.split('@')[0] || 'User',
+          nickname: meta.nickname || session.user.email?.split('@')[0] || 'User',
           accountType: 'pro',
-          avatar: profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || session.user.id)}`,
+          avatar: meta.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.email || session.user.id)}`,
         };
+        void loadProfileFromDb(session.user.id);
       } else {
         appMeta.user = null;
       }
       updateUserUI();
     }
 
-    function initAuth() {
+    async function loadProfileFromDb(userId) {
+      if (!SUPABASE || !authSession) return;
       try {
-        const raw = localStorage.getItem(AUTH_SESSION_KEY);
-        onAuthSession(raw ? JSON.parse(raw) : null);
-      } catch {
-        onAuthSession(null);
+        const { data, error } = await SUPABASE
+          .from('profiles')
+          .select('nickname, avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return;
+        if (data.nickname) appMeta.user.nickname = data.nickname;
+        if (data.avatar_url) appMeta.user.avatar = data.avatar_url;
+        updateUserUI();
+      } catch (err) {
+        console.warn('[CreatorLook] load profile failed:', err?.message || err);
       }
     }
 
-    function persistAuthSession(session) {
-      if (session) localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
-      else localStorage.removeItem(AUTH_SESSION_KEY);
+    async function initAuth() {
+      if (!SUPABASE) return;
+      // 旧版本本地假登录无法通过 Supabase RLS，清理残留 session
+      localStorage.removeItem('kol-inspiration-auth-session-v1');
+      localStorage.removeItem('kol-inspiration-auth-users-v1');
+      const { data: { session } } = await SUPABASE.auth.getSession();
       onAuthSession(session);
+      SUPABASE.auth.onAuthStateChange((_event, session) => onAuthSession(session));
     }
 
-    function registerLocalUser({ email, password, nickname }) {
-      const users = readAuthUsers();
-      if (users[email]) return { error: t('authExists') };
-      const id = crypto.randomUUID();
-      users[email] = { id, password, nickname };
-      writeAuthUsers(users);
-      const profiles = readProfiles();
-      profiles[id] = { nickname, avatar_url: null };
-      writeProfiles(profiles);
-      const session = { user: { id, email, nickname } };
-      persistAuthSession(session);
-      return { session };
-    }
-
-    function loginLocalUser({ email, password }) {
-      const users = readAuthUsers();
-      const record = users[email];
-      if (!record || record.password !== password) return { error: t('authInvalid') };
-      const session = { user: { id: record.id, email, nickname: record.nickname } };
-      persistAuthSession(session);
-      return { session };
-    }
-
-    function logoutLocalUser() {
-      persistAuthSession(null);
+    function hasSupabaseSession() {
+      return !!(authSession?.access_token && authSession?.user?.id);
     }
 
     function requireAuth() {
-      if (authSession) return true;
+      if (hasSupabaseSession()) return true;
       alert(t('authRequired'));
       appMeta.authMode = 'login';
       document.getElementById('auth-modal-title').textContent = t('login');
@@ -1316,9 +1292,11 @@
       savePostsStore();
     }
 
-    async function uploadImageToStorage(file) {
-      const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase();
-      const filePath = `uploads/${crypto.randomUUID()}.${ext}`;
+    async function uploadImageToStorage(file, category = 'uploads') {
+      const { data: { user } } = await SUPABASE.auth.getUser();
+      if (!user?.id) throw new Error(t('authRequired'));
+      const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/gi, '') || 'jpg';
+      const filePath = `${category}/${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await SUPABASE.storage.from(SUPABASE_BUCKET).upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -1329,9 +1307,15 @@
       return { imageUrl: data.publicUrl, storagePath: filePath, provider: 'supabase' };
     }
 
-    async function deleteStorageFile() {}
+    async function deleteStorageFile(storagePath) {
+      if (!storagePath) return;
+      const { error } = await SUPABASE.storage.from(SUPABASE_BUCKET).remove([storagePath]);
+      if (error) console.warn('storage delete', error);
+    }
 
     async function insertPost({ category, title, fans, imageUrl, storagePath, metadata }) {
+      const { data: { user } } = await SUPABASE.auth.getUser();
+      if (!user?.id) throw new Error(t('authRequired'));
       const payload = {
         image_url: imageUrl,
         storage_path: storagePath || null,
@@ -1339,7 +1323,7 @@
         fans: fans || null,
         category,
         metadata: metadata || {},
-        created_by: authSession?.user?.id || null,
+        created_by: user.id,
       };
       const { data, error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).insert(payload).select().single();
       if (error) throw error;
@@ -1691,7 +1675,7 @@
     }
 
     function updateUserUI() {
-      const loggedIn = !!appMeta.user;
+      const loggedIn = hasSupabaseSession() && !!appMeta.user;
       document.getElementById('btn-login').classList.toggle('hidden', loggedIn);
       document.getElementById('btn-avatar').classList.toggle('hidden', !loggedIn);
       toggleUploadButtons(loggedIn);
@@ -2330,6 +2314,7 @@
     });
     document.getElementById('form-auth').addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!SUPABASE) { alert(t('loadFailed')); return; }
       const f = e.target;
       const email = f.email.value.trim().toLowerCase();
       const password = f.password.value;
@@ -2344,12 +2329,24 @@
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
-        const result = appMeta.authMode === 'register'
-          ? registerLocalUser({ email, password, nickname })
-          : loginLocalUser({ email, password });
-        if (result.error) {
-          alert(result.error);
-          return;
+        if (appMeta.authMode === 'register') {
+          const { error } = await SUPABASE.auth.signUp({
+            email,
+            password,
+            options: { data: { nickname } },
+          });
+          if (error) throw error;
+          alert(appMeta.lang === 'en'
+            ? 'Check your email to confirm signup, or sign in if confirmation is disabled.'
+            : '注册成功。若项目开启邮箱验证，请查收邮件；否则可直接登录。');
+        } else {
+          const { error } = await SUPABASE.auth.signInWithPassword({ email, password });
+          if (error) {
+            if (error.message?.toLowerCase().includes('email not confirmed')) {
+              throw new Error(t('emailNotConfirmed'));
+            }
+            throw error;
+          }
         }
         closeModal('modal-auth');
       } catch (err) {
@@ -2359,8 +2356,8 @@
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel || t('login'); }
       }
     });
-    document.getElementById('menu-logout').addEventListener('click', () => {
-      logoutLocalUser();
+    document.getElementById('menu-logout').addEventListener('click', async () => {
+      if (SUPABASE) await SUPABASE.auth.signOut();
       document.getElementById('user-menu').classList.add('hidden');
     });
 
@@ -2392,15 +2389,16 @@
     }
 
     async function saveSettings(nickname, avatarUrl) {
-      if (!authSession?.user?.id) throw new Error('NOT_AUTHENTICATED');
+      if (!SUPABASE || !authSession?.user?.id) throw new Error('NOT_AUTHENTICATED');
       const userId = authSession.user.id;
-      const profiles = readProfiles();
-      profiles[userId] = {
+      const payload = {
+        id: userId,
         nickname: nickname || null,
         avatar_url: avatarUrl || null,
         updated_at: new Date().toISOString(),
       };
-      writeProfiles(profiles);
+      const { error } = await SUPABASE.from('profiles').upsert(payload);
+      if (error) throw error;
       if (nickname) appMeta.user.nickname = nickname;
       if (avatarUrl) appMeta.user.avatar = avatarUrl;
       if (!avatarUrl) {
@@ -2470,8 +2468,8 @@
       loadMeta();
       switchSubheader('kol');
       document.getElementById('global-search').value = state.searchQuery || '';
-      initAuth();
-      toggleUploadButtons(!!authSession);
+      await initAuth();
+      toggleUploadButtons(hasSupabaseSession());
       try {
         await fetchAllPosts();
         applyI18n();
