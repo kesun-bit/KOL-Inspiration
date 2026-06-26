@@ -804,6 +804,8 @@
         passwordMismatch: '两次密码不一致', passwordTooShort: '密码至少 8 位', invalidEmail: '邮箱格式不正确',
         deleteFailed: '删除失败，已恢复该卡片',
         emailNotConfirmed: '请先前往邮箱点击确认链接后再登录',
+        registerCheckEmail: '注册成功！请查收邮件（含垃圾箱）并点击确认链接，然后再登录。',
+        authLoginFailed: '登录失败：若刚注册，请先查收并点击确认邮件；否则请检查邮箱和密码是否正确。',
         authExists: '该邮箱已注册', authInvalid: '邮箱或密码错误',
         myFavorites: '我的收藏', settings: '设置', settingsTitle: '账号设置', avatarUrl: '头像链接', avatarHint: '支持公开图片 URL，保存后右上角头像会更新。', logout: '退出登录', favoritesTitle: '收藏夹',
         favoritesEmpty: '暂无收藏', viewProfile: '查看主页', edit: '编辑', delete: '删除',
@@ -834,6 +836,8 @@
         passwordMismatch: 'Passwords do not match', passwordTooShort: 'Password must be at least 8 characters', invalidEmail: 'Invalid email address',
         deleteFailed: 'Delete failed. The card was restored.',
         emailNotConfirmed: 'Please confirm your email before signing in',
+        registerCheckEmail: 'Sign-up successful! Check your inbox (and spam) for a confirmation link, then sign in.',
+        authLoginFailed: 'Sign-in failed. If you just registered, confirm your email first. Otherwise check your email and password.',
         authExists: 'Email already registered', authInvalid: 'Invalid email or password',
         myFavorites: 'My Favorites', settings: 'Settings', settingsTitle: 'Account settings', avatarUrl: 'Avatar URL', avatarHint: 'Use a public image URL. The top-right avatar updates after save.', logout: 'Log out', favoritesTitle: 'Favorites',
         favoritesEmpty: 'No favorites yet', viewProfile: 'View profile', edit: 'Edit', delete: 'Delete',
@@ -2309,6 +2313,17 @@
       if (confirmInput) confirmInput.required = isReg;
     }
 
+    function mapAuthError(error, mode = 'login') {
+      const msg = String(error?.message || error || '').toLowerCase();
+      const code = String(error?.code || '').toLowerCase();
+      if (msg.includes('email not confirmed') || code === 'email_not_confirmed') return t('emailNotConfirmed');
+      if (mode === 'login' && (msg.includes('invalid login credentials') || code === 'invalid_credentials')) {
+        return t('authLoginFailed');
+      }
+      if (msg.includes('user already registered') || msg.includes('already been registered')) return t('authExists');
+      return error?.message || String(error);
+    }
+
     document.getElementById('btn-switch-register').addEventListener('click', () => {
       setAuthMode(appMeta.authMode === 'login' ? 'register' : 'login');
     });
@@ -2330,25 +2345,29 @@
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
         if (appMeta.authMode === 'register') {
-          const { error } = await SUPABASE.auth.signUp({
+          const { data, error } = await SUPABASE.auth.signUp({
             email,
             password,
-            options: { data: { nickname } },
+            options: {
+              data: { nickname },
+              emailRedirectTo: window.location.origin + '/',
+            },
           });
           if (error) throw error;
-          alert(appMeta.lang === 'en'
-            ? 'Check your email to confirm signup, or sign in if confirmation is disabled.'
-            : '注册成功。若项目开启邮箱验证，请查收邮件；否则可直接登录。');
+          if (data.user?.identities?.length === 0) {
+            throw new Error(t('authExists'));
+          }
+          if (data.session) {
+            closeModal('modal-auth');
+            return;
+          }
+          alert(t('registerCheckEmail'));
+          setAuthMode('login');
         } else {
           const { error } = await SUPABASE.auth.signInWithPassword({ email, password });
-          if (error) {
-            if (error.message?.toLowerCase().includes('email not confirmed')) {
-              throw new Error(t('emailNotConfirmed'));
-            }
-            throw error;
-          }
+          if (error) throw new Error(mapAuthError(error, 'login'));
+          closeModal('modal-auth');
         }
-        closeModal('modal-auth');
       } catch (err) {
         console.error(err);
         alert(err.message || String(err));
