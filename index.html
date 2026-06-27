@@ -613,7 +613,8 @@
             <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="东京" /></label>
         </div>
         <label class="block text-sm">人种
-          <select name="ethnicity" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>白人</option><option>地中海裔</option><option>拉丁裔</option><option>非裔</option><option>混血及其他</option></select></label>
+          <input name="ethnicity" list="kol-ethnicity-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="选择或输入新人种" />
+          <datalist id="kol-ethnicity-datalist"></datalist></label>
         <label class="block text-sm">风格描述
           <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="高冷/复古/Y2K" /></label>
         <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
@@ -664,7 +665,9 @@
           </div>
         </div>
         <label class="block text-sm">类型
-          <select name="category" id="gallery-category-select" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
+          <select name="category" id="gallery-category-select" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select>
+          <input name="categoryInput" id="gallery-category-input" list="ai-category-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm hidden" placeholder="选择或输入新类型" />
+          <datalist id="ai-category-datalist"></datalist></label>
         <label class="block text-sm">描述 / Prompt
           <input name="style" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="cinematic portrait, soft light..." /></label>
         <label id="gallery-web-tags-field" class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在图片上）</span>
@@ -788,9 +791,9 @@
     };
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
-    const AI_CATEGORIES = ['全部', '图片编辑', '人像', '发型', 'AI工具', '节日氛围'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
-    const KOL_ETHNICITY = ['全部', '白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
+    const KOL_ETHNICITY_BASE = ['白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
+    const AI_CATEGORIES_BASE = ['图片编辑', '人像', '发型', 'AI工具', '节日氛围'];
     const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
     const KOL_ETHNICITY_UI_TO_DB = { '白人': '白人', '地中海裔': '地中海裔', '拉丁裔': '拉丁裔', '非裔': '非裔', '混血及其他': '混血及其他' };
 
@@ -875,7 +878,7 @@
       '节日主题': 'catCreativeHoliday', '玩法包装': 'catCreativeCampaign', '趋势': 'catCreativeTrend',
     };
 
-    let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login' };
+    let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login', customKolEthnicities: [], customAiCategories: [] };
     let authSession = null;
     // DB-backed; keep legacy helpers below for one-time seeding only.
     let postsStore = [];
@@ -1055,7 +1058,49 @@
     function t(key) { return I18N[appMeta.lang]?.[key] ?? I18N.zh[key] ?? key; }
     function tCat(cat) { return t(CAT_I18N_KEYS[cat] || 'catAll'); }
     function tCreativeCat(cat) { return t(CREATIVE_CAT_I18N_KEYS[cat] || 'catCreativeAll'); }
-    function tEth(eth) { return t(ETH_I18N_KEYS[eth] || 'ethAll'); }
+    function tEth(eth) {
+      if (eth === '全部') return t('ethAll');
+      return ETH_I18N_KEYS[eth] ? t(ETH_I18N_KEYS[eth]) : eth;
+    }
+    function uniqueLabels(values) {
+      return [...new Set(values.map((v) => String(v || '').trim()).filter(Boolean))];
+    }
+    function getKolEthnicityFilterList() {
+      const fromPosts = state.kols.map((k) => normalizeKolEthnicity(k.ethnicity));
+      return ['全部', ...uniqueLabels([...KOL_ETHNICITY_BASE, ...(appMeta.customKolEthnicities || []), ...fromPosts])];
+    }
+    function getAiCategoryFilterList() {
+      const fromPosts = state.aiModels.map((i) => i.category);
+      return ['全部', ...uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...fromPosts])];
+    }
+    function populateKolEthnicityDatalist() {
+      const datalist = document.getElementById('kol-ethnicity-datalist');
+      if (!datalist) return;
+      const options = uniqueLabels([...KOL_ETHNICITY_BASE, ...(appMeta.customKolEthnicities || []), ...state.kols.map((k) => normalizeKolEthnicity(k.ethnicity))]);
+      datalist.innerHTML = options.map((v) => `<option value="${esc(v)}"></option>`).join('');
+    }
+    function populateAiCategoryDatalist() {
+      const datalist = document.getElementById('ai-category-datalist');
+      if (!datalist) return;
+      const options = uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...state.aiModels.map((i) => i.category)]);
+      datalist.innerHTML = options.map((v) => `<option value="${esc(v)}"></option>`).join('');
+    }
+    function registerCustomKolEthnicity(value) {
+      const v = normalizeKolEthnicity(value);
+      if (!v || KOL_ETHNICITY_BASE.includes(v)) return;
+      appMeta.customKolEthnicities = uniqueLabels([...(appMeta.customKolEthnicities || []), v]);
+      saveMeta();
+      renderKolEthnicityFilters();
+      populateKolEthnicityDatalist();
+    }
+    function registerCustomAiCategory(value) {
+      const v = String(value || '').trim();
+      if (!v || AI_CATEGORIES_BASE.includes(v)) return;
+      appMeta.customAiCategories = uniqueLabels([...(appMeta.customAiCategories || []), v]);
+      saveMeta();
+      renderAiFilters();
+      populateAiCategoryDatalist();
+    }
     function favKey(type, id) { return `${type}:${id}`; }
 
     function loadMeta() {
@@ -1066,6 +1111,8 @@
           const parsed = JSON.parse(raw);
           appMeta.lang = parsed.lang === 'en' ? 'en' : 'zh';
           appMeta.favorites = Array.isArray(parsed.favorites) ? parsed.favorites : [];
+          appMeta.customKolEthnicities = Array.isArray(parsed.customKolEthnicities) ? parsed.customKolEthnicities : [];
+          appMeta.customAiCategories = Array.isArray(parsed.customAiCategories) ? parsed.customAiCategories : [];
           state.searchQuery = parsed.searchQuery || '';
           document.getElementById('global-search').value = state.searchQuery;
         }
@@ -1078,6 +1125,8 @@
           lang: appMeta.lang,
           favorites: appMeta.favorites,
           searchQuery: state.searchQuery,
+          customKolEthnicities: appMeta.customKolEthnicities || [],
+          customAiCategories: appMeta.customAiCategories || [],
         }));
       } catch (e) { console.warn('save meta failed', e); }
     }
@@ -1297,6 +1346,10 @@
       applyPostsToState(rows);
       postsStore = rows;
       savePostsStore();
+      renderKolEthnicityFilters();
+      renderAiFilters();
+      populateKolEthnicityDatalist();
+      populateAiCategoryDatalist();
     }
 
     async function uploadImageToStorage(file, category = 'uploads') {
@@ -1661,7 +1714,7 @@
       renderKolEthnicityFilters();
       renderFilters('filter-inspiration', 'filterInspiration', renderInspiration);
       renderCreativeFilters();
-      renderFilters('filter-ai', 'filterAi', renderAi, AI_CATEGORIES, (cat) => cat);
+      renderAiFilters();
       renderKols();
       renderInspiration();
       renderCreative();
@@ -1819,8 +1872,13 @@
 
     function renderKolEthnicityFilters() {
       const c = document.getElementById('filter-kol-ethnicity');
-      c.innerHTML = KOL_ETHNICITY.map((cat)=>`<button data-eth="${cat}" class="filter-link ${state.filterKolEthnicity===cat?'filter-link-active':''}">${esc(tEth(cat))}</button>`).join('');
+      const categories = getKolEthnicityFilterList();
+      c.innerHTML = categories.map((cat)=>`<button data-eth="${esc(cat)}" class="filter-link ${state.filterKolEthnicity===cat?'filter-link-active':''}">${esc(tEth(cat))}</button>`).join('');
       c.querySelectorAll('[data-eth]').forEach((b)=>b.addEventListener('click',()=>{state.filterKolEthnicity=b.dataset.eth;renderKolEthnicityFilters();renderKols();}));
+    }
+
+    function renderAiFilters() {
+      renderFilters('filter-ai', 'filterAi', renderAi, getAiCategoryFilterList(), (cat) => cat);
     }
 
     function renderFilters(containerId, key, onChange, categories = CATEGORIES, labelFn = tCat) {
@@ -1895,7 +1953,8 @@
       f.followers.value = kol.followers || '';
       f.gender.value = kol.gender || '女';
       f.region.value = kol.region || '';
-      f.ethnicity.value = uiEthnicityToDb(kol.ethnicity || '白人');
+      f.ethnicity.value = kol.ethnicity || '白人';
+      populateKolEthnicityDatalist();
       f.accountType.value = kol.accountType || '';
       f.searchTags.value = (kol.searchTags || []).join(', ');
       setDropZoneImage('kol-image-data', kol.image || '');
@@ -1907,6 +1966,7 @@
       document.getElementById('modal-kol-title').textContent=t('addKol');
       document.getElementById('kol-id').value='';
       document.getElementById('form-kol').reset();
+      populateKolEthnicityDatalist();
       clearDropZone('kol-image-data');
       openModal('modal-kol');
     });
@@ -1938,17 +1998,20 @@
           alert(t('imageRequired'));
           return;
         }
+        const ethnicityVal = normalizeKolEthnicity(f.ethnicity.value);
+        if (!ethnicityVal) { alert(appMeta.lang === 'en' ? 'Ethnicity is required.' : '请填写人种。'); return; }
+        registerCustomKolEthnicity(ethnicityVal);
         const searchTags = parseTagsFromString(f.searchTags?.value);
         const metadata = {
           account: f.account.value.trim(),
           gender: f.gender.value,
           region: f.region.value.trim(),
-          ethnicity: uiEthnicityToDb(f.ethnicity.value),
+          ethnicity: ethnicityVal,
           accountType: f.accountType.value.trim(),
           searchTags: searchTags.length ? searchTags : buildKolSearchTags({
             name: f.name.value.trim(),
             accountType: f.accountType.value.trim(),
-            ethnicity: f.ethnicity.value,
+            ethnicity: ethnicityVal,
             gender: f.gender.value,
             region: f.region.value.trim(),
             followers: f.followers.value.trim(),
@@ -2180,8 +2243,16 @@
 
     function populateGalleryCategories(type) {
       const categorySelect = document.getElementById('gallery-category-select');
-      const categories = type === 'ai' ? AI_CATEGORIES : (type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES);
-      const labelFn = type === 'creative' ? tCreativeCat : (type === 'ai' ? t : tCat);
+      const categoryInput = document.getElementById('gallery-category-input');
+      const isAi = type === 'ai';
+      categorySelect.classList.toggle('hidden', isAi);
+      categoryInput.classList.toggle('hidden', !isAi);
+      if (isAi) {
+        populateAiCategoryDatalist();
+        return;
+      }
+      const categories = type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES;
+      const labelFn = type === 'creative' ? tCreativeCat : tCat;
       categorySelect.innerHTML = '';
       categories.filter((c) => c !== '全部').forEach((c) => {
         const o = document.createElement('option');
@@ -2189,6 +2260,11 @@
         o.textContent = labelFn(c);
         categorySelect.appendChild(o);
       });
+    }
+
+    function getGalleryCategoryValue(f, type) {
+      if (type === 'ai') return (f.categoryInput?.value || '').trim();
+      return f.category.value;
     }
 
     function openGalleryModal(type) {
@@ -2217,6 +2293,7 @@
       populateGalleryCategories(type);
       const f = document.getElementById('form-gallery');
       pendingFiles['gallery-image-data'] = null;
+      f.categoryInput.value = item.category;
       f.category.value = item.category;
       f.style.value = item.style || '';
       if (type === 'ai') {
@@ -2242,7 +2319,10 @@
       const file = pendingFiles['gallery-image-data'];
       if (!file && !existingItem?.image) { alert(t('imageRequired')); return; }
       if (file && !assertUploadFileSize(file)) return;
+      const categoryVal = getGalleryCategoryValue(f, type);
+      if (!categoryVal) { alert(appMeta.lang === 'en' ? 'Category is required.' : '请填写类型。'); return; }
       const styleVal = f.style.value.trim() || '未标注';
+      if (type === 'ai') registerCustomAiCategory(categoryVal);
       const submitBtn = f.querySelector('button[type="submit"]');
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
@@ -2257,18 +2337,18 @@
           storagePath = existingItem.storagePath || '';
         }
         const metadata = {
-          subcategory: f.category.value,
+          subcategory: categoryVal,
           style: styleVal,
         };
         if (type === 'ai') {
           metadata.prompt = styleVal;
           const manualTags = parseTagsFromString(f.tags?.value);
-          metadata.tags = manualTags.length ? manualTags : buildAiTags(styleVal, f.category.value);
+          metadata.tags = manualTags.length ? manualTags : buildAiTags(styleVal, categoryVal);
         } else {
           const webTags = parseTagsFromString(f.searchTags?.value);
           metadata.searchTags = webTags.length ? webTags : (type === 'creative'
-            ? buildCreativeSearchTags({ category: f.category.value, style: styleVal })
-            : buildInspirationSearchTags({ category: f.category.value, style: styleVal }));
+            ? buildCreativeSearchTags({ category: categoryVal, style: styleVal })
+            : buildInspirationSearchTags({ category: categoryVal, style: styleVal }));
         }
         const payload = {
           title: styleVal,
