@@ -788,7 +788,7 @@
     };
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
-    const AI_CATEGORIES = ['全部', '图片编辑', '人像', '发型', 'AI工具', 'AI效果', '节日氛围'];
+    const AI_CATEGORIES = ['全部', '图片编辑', '人像', '发型', 'AI工具', '节日氛围'];
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
     const KOL_ETHNICITY = ['全部', '白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
     const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
@@ -1174,7 +1174,7 @@
       if (row.category === 'net_model' && !item.searchTags.length) item.searchTags = buildInspirationSearchTags(item);
       if (row.category === 'inspiration' && !item.searchTags.length) item.searchTags = buildCreativeSearchTags(item);
       if (row.category === 'ai_model') {
-        item.prompt = item.prompt || buildAiPrompt(item.style, item.category);
+        item.prompt = m.prompt || item.style || '';
         if (!item.tags.length) item.tags = buildAiTags(item.style, item.category);
       }
       return item;
@@ -1777,13 +1777,6 @@
       return data.category ? [data.category] : [];
     }
 
-    function buildAiPrompt(style, category) {
-      const base = style || '未标注';
-      const extras = ['high detail', 'cinematic light', 'natural skin texture'];
-      if (category && category !== '全部') extras.unshift(category);
-      return `${base}, ${extras.join(', ')}`;
-    }
-
     function buildAiTags(style, category) {
       const tags = parseTagsFromString(style);
       if (category && category !== '全部' && !tags.includes(category)) tags.unshift(category);
@@ -2268,7 +2261,7 @@
           style: styleVal,
         };
         if (type === 'ai') {
-          metadata.prompt = buildAiPrompt(styleVal, f.category.value);
+          metadata.prompt = styleVal;
           const manualTags = parseTagsFromString(f.tags?.value);
           metadata.tags = manualTags.length ? manualTags : buildAiTags(styleVal, f.category.value);
         } else {
