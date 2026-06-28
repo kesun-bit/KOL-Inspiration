@@ -794,6 +794,7 @@
     const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
     const KOL_ETHNICITY_BASE = ['白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
     const AI_CATEGORIES_BASE = ['节日氛围', '图片编辑', '人像', '发型', 'AI工具'];
+    const AI_CATEGORIES_EXCLUDED = ['身材reshape'];
     const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
     const KOL_ETHNICITY_UI_TO_DB = { '白人': '白人', '地中海裔': '地中海裔', '拉丁裔': '拉丁裔', '非裔': '非裔', '混血及其他': '混血及其他' };
 
@@ -1065,13 +1066,19 @@
     function uniqueLabels(values) {
       return [...new Set(values.map((v) => String(v || '').trim()).filter(Boolean))];
     }
+    function isExcludedAiCategory(cat) {
+      return AI_CATEGORIES_EXCLUDED.includes(String(cat || '').trim());
+    }
+    function filterAiCategoryOptions(list) {
+      return list.filter((c) => c === '全部' || !isExcludedAiCategory(c));
+    }
     function getKolEthnicityFilterList() {
       const fromPosts = state.kols.map((k) => normalizeKolEthnicity(k.ethnicity));
       return ['全部', ...uniqueLabels([...KOL_ETHNICITY_BASE, ...(appMeta.customKolEthnicities || []), ...fromPosts])];
     }
     function getAiCategoryFilterList() {
       const fromPosts = state.aiModels.map((i) => i.category);
-      return ['全部', ...uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...fromPosts])];
+      return filterAiCategoryOptions(['全部', ...uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...fromPosts])]);
     }
     function populateKolEthnicityDatalist() {
       const datalist = document.getElementById('kol-ethnicity-datalist');
@@ -1082,7 +1089,7 @@
     function populateAiCategoryDatalist() {
       const datalist = document.getElementById('ai-category-datalist');
       if (!datalist) return;
-      const options = uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...state.aiModels.map((i) => i.category)]);
+      const options = filterAiCategoryOptions(uniqueLabels([...AI_CATEGORIES_BASE, ...(appMeta.customAiCategories || []), ...state.aiModels.map((i) => i.category)]));
       datalist.innerHTML = options.map((v) => `<option value="${esc(v)}"></option>`).join('');
     }
     function registerCustomKolEthnicity(value) {
@@ -1095,7 +1102,7 @@
     }
     function registerCustomAiCategory(value) {
       const v = String(value || '').trim();
-      if (!v || AI_CATEGORIES_BASE.includes(v)) return;
+      if (!v || AI_CATEGORIES_BASE.includes(v) || isExcludedAiCategory(v)) return;
       appMeta.customAiCategories = uniqueLabels([...(appMeta.customAiCategories || []), v]);
       saveMeta();
       renderAiFilters();
@@ -1112,7 +1119,9 @@
           appMeta.lang = parsed.lang === 'en' ? 'en' : 'zh';
           appMeta.favorites = Array.isArray(parsed.favorites) ? parsed.favorites : [];
           appMeta.customKolEthnicities = Array.isArray(parsed.customKolEthnicities) ? parsed.customKolEthnicities : [];
-          appMeta.customAiCategories = Array.isArray(parsed.customAiCategories) ? parsed.customAiCategories : [];
+          appMeta.customAiCategories = Array.isArray(parsed.customAiCategories)
+            ? parsed.customAiCategories.filter((c) => !isExcludedAiCategory(c))
+            : [];
           state.searchQuery = parsed.searchQuery || '';
           document.getElementById('global-search').value = state.searchQuery;
         }
@@ -1126,7 +1135,7 @@
           favorites: appMeta.favorites,
           searchQuery: state.searchQuery,
           customKolEthnicities: appMeta.customKolEthnicities || [],
-          customAiCategories: appMeta.customAiCategories || [],
+          customAiCategories: (appMeta.customAiCategories || []).filter((c) => !isExcludedAiCategory(c)),
         }));
       } catch (e) { console.warn('save meta failed', e); }
     }
@@ -1878,6 +1887,7 @@
     }
 
     function renderAiFilters() {
+      if (isExcludedAiCategory(state.filterAi)) state.filterAi = '全部';
       renderFilters('filter-ai', 'filterAi', renderAi, getAiCategoryFilterList(), (cat) => cat);
     }
 
