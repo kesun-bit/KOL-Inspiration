@@ -1066,8 +1066,12 @@
     function uniqueLabels(values) {
       return [...new Set(values.map((v) => String(v || '').trim()).filter(Boolean))];
     }
+    function normalizeAiCategoryKey(cat) {
+      return String(cat || '').trim().toLowerCase().replace(/\s+/g, '');
+    }
     function isExcludedAiCategory(cat) {
-      return AI_CATEGORIES_EXCLUDED.includes(String(cat || '').trim());
+      const key = normalizeAiCategoryKey(cat);
+      return AI_CATEGORIES_EXCLUDED.some((blocked) => normalizeAiCategoryKey(blocked) === key);
     }
     function filterAiCategoryOptions(list) {
       return list.filter((c) => c === '全部' || !isExcludedAiCategory(c));
