@@ -2063,7 +2063,6 @@
       const c=document.getElementById(containerId);
       let list=filter==='全部'?items:items.filter((i)=>i.category===filter);
       const tab = getActiveTab();
-      const loggedIn = !!appMeta.user;
       if (state.searchQuery.trim()) {
         if (mode === 'web' && tab === 'inspiration') {
           list = list.filter((i) => matchesSearch(buildInspirationSearchTags(i), i.style));
@@ -2073,7 +2072,6 @@
           list = list.filter((i) => matchesSearch(buildAiSearchTags(i), i.prompt || i.style));
         }
       }
-      if(!loggedIn) list = list.slice(0, 12);
       if(!list.length){
         const searching = state.searchQuery.trim() && (
           (mode === 'web' && tab === 'inspiration') ||
