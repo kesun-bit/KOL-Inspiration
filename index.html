@@ -952,7 +952,7 @@
         <div class="block text-sm">
           <span data-i18n="uploadImage">展示图</span>
           <div class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
-            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
             <div class="drop-zone-empty">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
               <p class="drop-zone-hint" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
@@ -2076,6 +2076,25 @@
       if (fileInput) fileInput.value = '';
     }
 
+    function resetUploadCache(inputId) {
+      pendingFiles[inputId] = null;
+      if (pendingFileLists[inputId]) pendingFileLists[inputId] = [];
+      const input = document.getElementById(inputId);
+      if (input) input.value = '';
+      const zone = getDropZone(inputId);
+      if (!zone) return;
+      zone.querySelector('.batch-preview-panel')?.remove();
+      zone.classList.remove('has-image', 'is-dragover', 'is-batch');
+      const preview = zone.querySelector('.drop-zone-preview');
+      if (preview) preview.removeAttribute('src');
+      const fileInput = zone.querySelector('.drop-file-input');
+      if (fileInput) fileInput.value = '';
+    }
+
+    function resetAllUploadCaches() {
+      Object.keys(pendingFiles).forEach(resetUploadCache);
+    }
+
     function compressImageFile(file, maxW = 1200, quality = 0.82) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -2206,8 +2225,9 @@
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(); }
         });
         fileInput.addEventListener('change', () => {
-          const files = fileInput.files;
-          if (!files?.length) return;
+          const files = Array.from(fileInput.files || []);
+          resetUploadCache(inputId);
+          if (!files.length) return;
           if (fileInput.multiple) handleImageFiles(files, inputId);
           else handleImageFile(files[0], inputId);
         });
@@ -2716,7 +2736,7 @@
         if (SUPABASE_READY) await fetchAllPosts();
         renderKols();
         closeModal('modal-kol');
-        clearDropZone('kol-image-data');
+        resetAllUploadCaches();
         document.getElementById('kol-id').value = '';
       } catch (err) {
         console.error(err);
@@ -3111,7 +3131,7 @@
       populateGalleryCategories(type);
       document.getElementById('form-gallery').reset();
       const galleryFileInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
-      if (galleryFileInput) galleryFileInput.multiple = type === 'inspiration';
+      if (galleryFileInput) galleryFileInput.multiple = false;
       document.getElementById('gallery-type').value = type;
       clearDropZone('gallery-image-data');
       openModal('modal-gallery');
@@ -3160,14 +3180,7 @@
       const editId = document.getElementById('gallery-id').value.trim();
       const postCategory = POST_CATEGORIES[type];
       const existingItem = editId ? findItemWithStorage(type, editId) : null;
-      const galleryInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
-      const rawSelectedFiles = type === 'inspiration' ? Array.from(galleryInput?.files || []) : [];
-      const batchFiles = type === 'inspiration'
-        ? ((pendingFileLists['gallery-image-data'] || []).map((item) => item.file).filter(Boolean).length
-          ? (pendingFileLists['gallery-image-data'] || []).map((item) => item.file).filter(Boolean)
-          : rawSelectedFiles)
-        : [];
-      const file = type === 'inspiration' ? batchFiles[0] : pendingFiles['gallery-image-data'];
+      const file = pendingFiles['gallery-image-data'];
       if (!file && !existingItem?.image) { alert(t('imageRequired')); return; }
       if (file && !assertUploadFileSize(file)) return;
       const categoryVal = getGalleryCategoryValue(f, type);
@@ -3181,12 +3194,9 @@
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
-        const filesToSave = type === 'inspiration' && batchFiles.length ? batchFiles : [file].filter(Boolean);
         const uploadedImages = [];
-        if (filesToSave.length) {
-          for (const imageFile of filesToSave) {
-            uploadedImages.push(await uploadOrUseLocalImage(imageFile, postCategory));
-          }
+        if (file) {
+          uploadedImages.push(await uploadOrUseLocalImage(file, postCategory));
           if (existingItem?.storagePath) await deleteStorageFile(existingItem.storagePath);
         } else {
           uploadedImages.push({ imageUrl: existingItem.image, storagePath: existingItem.storagePath || '' });
@@ -3226,7 +3236,7 @@
         if (SUPABASE_READY) await fetchAllPosts();
         renderByCategory(postCategory);
         closeModal('modal-gallery');
-        clearDropZone('gallery-image-data');
+        resetAllUploadCaches();
         document.getElementById('gallery-id').value = '';
       } catch (err) {
         console.error(err);
