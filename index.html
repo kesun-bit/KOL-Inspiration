@@ -1837,9 +1837,7 @@
       });
       if (uploadError) throw uploadError;
       const { data } = SUPABASE.storage.from(SUPABASE_BUCKET).getPublicUrl(filePath);
-      const publicUrl = withCacheBust(data.publicUrl);
-      await verifyImageUrl(publicUrl);
-      return { imageUrl: publicUrl, storagePath: filePath, provider: 'supabase' };
+      return { imageUrl: withCacheBust(data.publicUrl), storagePath: filePath, provider: 'supabase' };
     }
 
     function fileToDataUrl(file) {
