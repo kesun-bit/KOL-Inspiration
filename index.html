@@ -66,6 +66,9 @@
     }
 
     .filter-scroll { -ms-overflow-style: none; scrollbar-width: none; gap: 22px; }
+    #filter-inspiration.filter-scroll,
+    #filter-ai.filter-scroll,
+    #filter-creative.filter-scroll { overflow: visible; }
     .filter-scroll::-webkit-scrollbar { display: none; }
     .filter-link {
       position: relative;
@@ -166,6 +169,16 @@
       padding: 16px 14px 14px;
       background: linear-gradient(to top, rgba(0,0,0,.52) 0%, rgba(0,0,0,.28) 55%, transparent 100%);
       color: #fff;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .kol-card:hover .kol-overlay,
+    .kol-card:focus-within .kol-overlay {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
     }
     .kol-name { font-size: 17px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
     .kol-desc { margin-top: 6px; font-size: 12px; line-height: 1.45; color: rgba(255,255,255,.92); text-shadow: 0 1px 3px rgba(0,0,0,.35); }
@@ -221,6 +234,40 @@
 
     .lightbox-enter { animation: fade .3s ease; }
     @keyframes fade { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1);} }
+    #lightbox.ai-lightbox {
+      background: rgba(255,255,255,.68) !important;
+      backdrop-filter: blur(18px) saturate(1.05);
+    }
+    #lightbox.ai-lightbox #lightbox-image-wrap {
+      background: transparent !important;
+      border-radius: 0;
+      overflow: visible;
+    }
+    #lightbox.ai-lightbox #lightbox-img {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: 82vh;
+      object-fit: contain;
+      border-radius: 18px;
+      box-shadow: 0 18px 56px rgba(0,0,0,.14);
+    }
+    #lightbox.ai-lightbox #lightbox-sidebar,
+    #lightbox.ai-lightbox #lightbox-sidebar-mobile {
+      background: rgba(255,255,255,.74) !important;
+      color: #2f2f2f !important;
+      border: 1px solid rgba(0,0,0,.06);
+      box-shadow: 0 18px 56px rgba(0,0,0,.1);
+      backdrop-filter: blur(18px);
+    }
+    #lightbox.ai-lightbox #lightbox-sidebar { max-height: var(--lightbox-image-height, 82vh) !important; }
+    #lightbox.ai-lightbox #lightbox-sidebar-mobile { max-height: min(40vh, var(--lightbox-image-height, 40vh)) !important; }
+    #lightbox.ai-lightbox #lightbox-sidebar p,
+    #lightbox.ai-lightbox #lightbox-sidebar-mobile p { color: rgba(47,47,47,.86) !important; }
+    #lightbox.ai-lightbox [data-i18n="promptLabel"] { color: rgba(47,47,47,.45) !important; }
+    #lightbox.ai-lightbox .lightbox-tag { background: rgba(0,0,0,.06); color: rgba(47,47,47,.72); }
+    #lightbox.ai-lightbox #lightbox-close { background: rgba(255,255,255,.72); color: #2f2f2f; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    #lightbox.ai-lightbox #lightbox-close:hover { background: #fff; }
 
     .subheader-row {
       display: flex;
@@ -240,6 +287,207 @@
       transition: opacity .2s ease;
     }
     .btn-upload:hover { opacity: .7; }
+    .web-filter-select-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
+    .web-filter-select-wrap select.filter-link {
+      appearance: auto;
+      -webkit-appearance: menulist;
+      height: 36px;
+      min-width: 104px;
+      max-width: 148px;
+      padding-right: 8px;
+      cursor: pointer;
+      background: transparent;
+      outline: none;
+    }
+    .creative-chip-row { gap: 8px; }
+    .creative-chip {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #ececeb;
+      color: #77736d;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background .16s ease, color .16s ease;
+    }
+    .creative-chip:hover,
+    .creative-chip.is-active { background: #2f2f2f; color: #fff; }
+    .creative-region-dropdown { position: relative; flex: 0 0 auto; }
+    .creative-region-summary {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #2f2f2f;
+      padding: 8px 4px;
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    .creative-region-summary::-webkit-details-marker { display: none; }
+    .creative-region-summary::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 1px;
+      background: currentColor;
+    }
+    .creative-region-caret { transition: transform .16s ease; color: #6f6f6f; }
+    .creative-region-dropdown[open] .creative-region-caret { transform: rotate(180deg); }
+    .creative-region-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 60;
+      min-width: 142px;
+      padding: 8px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.08);
+      background: #fff;
+      box-shadow: 0 14px 34px rgba(0,0,0,.14);
+    }
+    .creative-region-option {
+      width: 100%;
+      min-height: 36px;
+      padding: 0 14px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      color: #2f2f2f;
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .creative-region-option:hover,
+    .creative-region-option.is-active { background: #f0f0ef; }
+    .multi-filter-dropdown { position: relative; flex: 0 0 auto; }
+    .multi-filter-summary {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #6f6f6f;
+      padding: 8px 4px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color .2s ease;
+    }
+    .multi-filter-dropdown[open] .multi-filter-summary,
+    .multi-filter-summary.is-active,
+    .multi-filter-summary:hover { color: #3f3f3f; }
+    .multi-filter-summary.is-active { color: #2f2f2f; font-weight: 600; }
+    .multi-filter-summary.is-active::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 1px;
+      background: currentColor;
+    }
+    .multi-filter-summary::-webkit-details-marker { display: none; }
+    .multi-filter-label { max-width: none; overflow: visible; text-overflow: clip; white-space: nowrap; }
+    .multi-filter-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      z-index: 60;
+      width: 180px;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.08);
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    .multi-filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 32px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #4d4b47;
+      cursor: pointer;
+    }
+    .multi-filter-option:hover { background: #f2f2f2; }
+    .multi-filter-option input { accent-color: #2f2f2f; }
+    .web-upload-select-wrap { position: relative; }
+    .web-upload-select {
+      width: 100%;
+      height: 46px;
+      padding: 0 82px 0 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,.1);
+      background: #ececeb;
+      color: #3f3f3f;
+      font-size: 14px;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .web-upload-select-wrap::after {
+      content: '⌄';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4b4b4b;
+      pointer-events: none;
+    }
+    .web-option-manager {
+      position: absolute;
+      right: 34px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .web-option-manager.is-collapsed { display: inline-flex; }
+    .web-option-manager input { display: none; }
+    .web-option-add,
+    .web-option-remove,
+    .web-select-action {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,.72);
+      color: #3f3f3f;
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    }
+    .web-select-action {
+      position: absolute;
+      top: 50%;
+      z-index: 2;
+      transform: translateY(-50%);
+    }
+    .web-select-add { right: 58px; }
+    .web-select-remove { right: 32px; }
+    .web-option-add:hover,
+    .web-option-remove:hover,
+    .web-select-action:hover { background: #2f2f2f; color: #fff; }
 
     .lightbox-tag {
       display: inline-flex;
@@ -338,6 +586,7 @@
     }
     .lang-option:hover { background: #f2f2f2; }
     .lang-option-active { background: #ececeb; color: #2f2f2f; }
+    .lang-toggle-btn { gap: 4px; width: auto; padding: 0 9px; font-size: 11px; font-weight: 700; }
 
     .favorites-drawer {
       position: fixed;
@@ -353,6 +602,26 @@
     .fav-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .fav-thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #efefee; }
     .fav-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .fav-select-box {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 6;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      border: 1.5px solid rgba(255,255,255,.88);
+      background: rgba(0,0,0,.26);
+      backdrop-filter: blur(8px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition: background .16s ease, color .16s ease;
+    }
+    .fav-select-box input { position: absolute; opacity: 0; pointer-events: none; }
+    .fav-select-box:has(input:checked) { background: #2f2f2f; color: #fff; }
+    .fav-select-box svg { width: 17px; height: 17px; stroke-width: 2.4; }
 
     .header-top-row {
       display: grid;
@@ -389,7 +658,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       padding: 20px;
       text-align: center;
       pointer-events: none;
@@ -419,6 +688,27 @@
       backdrop-filter: blur(4px);
     }
     .drop-zone:not(.has-image) .drop-zone-remove { display: none; }
+    .drop-zone.is-batch {
+      min-height: 248px;
+      padding: 12px;
+      align-items: stretch;
+      justify-content: stretch;
+      background: linear-gradient(135deg, #f7f5f2, #eceae6);
+      border-style: solid;
+      border-color: rgba(0,0,0,.08);
+    }
+    .drop-zone.is-batch .drop-zone-empty,
+    .drop-zone.is-batch .drop-zone-preview { display: none; }
+    .batch-preview-panel { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+    .batch-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 0; }
+    .batch-preview-title { font-size: 13px; font-weight: 700; color: #242424; }
+    .batch-preview-subtitle { margin-top: 2px; font-size: 11px; color: #7b7770; }
+    .batch-count-badge { height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; background: #1f1f1f; color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 8px 18px rgba(0,0,0,.18); }
+    .batch-thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .batch-thumb { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #dedbd5; box-shadow: inset 0 0 0 1px rgba(255,255,255,.55); }
+    .batch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .batch-thumb-more { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(31,31,31,.84), rgba(31,31,31,.64)); color: #fff; font-size: 18px; font-weight: 800; }
+    .batch-preview-foot { padding: 0 4px 2px; font-size: 11px; color: #7b7770; }
     .sr-only {
       position: absolute;
       width: 1px;
@@ -500,6 +790,9 @@
       .fav-btn { opacity: 1; }
       .media-card:hover { transform: none; }
       .kol-card .fav-btn { opacity: 1; }
+      .kol-card .kol-overlay { opacity: 0; transform: translateY(10px); pointer-events: none; }
+      .kol-card:hover .kol-overlay,
+      .kol-card:focus-within .kol-overlay { opacity: 1; transform: translateY(0); pointer-events: auto; }
     }
   </style>
 </head>
@@ -512,6 +805,7 @@
       </div>
       <nav id="main-tabs" class="tab-segment tabs-scroll header-top-center flex items-center p-1 rounded-full bg-wash" role="tablist">
         <button data-tab="kol" class="main-tab tab-active" role="tab" data-i18n="tabKol">KOL</button>
+        <button data-tab="inspiration" class="main-tab" role="tab" data-i18n="tabWeb">网图</button>
         <button data-tab="ai-models" class="main-tab" role="tab" data-i18n="tabAi">AI模特</button>
         <button data-tab="creative" class="main-tab" role="tab" data-i18n="tabCreative">灵感</button>
       </nav>
@@ -524,8 +818,9 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
         </button>
         <div class="relative">
-          <button id="btn-lang" type="button" class="icon-btn" aria-label="Language" title="CH / EN">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M5 12h10M5 16h6"/><circle cx="17" cy="12" r="4"/><path d="M15 10h4M15 14h4"/></svg>
+          <button id="btn-lang" type="button" class="icon-btn lang-toggle-btn" aria-label="Language" title="CH / EN">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 010 18"/><path d="M12 3a13.5 13.5 0 000 18"/></svg>
+            <span id="lang-toggle-label">CH</span>
           </button>
           <div id="lang-popover" class="lang-popover hidden">
             <button type="button" class="lang-option lang-option-active" data-lang="zh">CH</button>
@@ -560,15 +855,15 @@
         <button id="btn-add-kol" type="button" class="btn-upload" data-i18n="upload">Upload</button>
       </div>
       <div id="subheader-inspiration" class="subheader-row hidden">
-        <div id="filter-inspiration" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <div id="filter-inspiration" class="filter-scroll flex items-center min-w-0"></div>
         <button id="btn-add-inspiration" type="button" class="btn-upload" data-i18n="upload">Upload</button>
       </div>
       <div id="subheader-creative" class="subheader-row hidden">
-        <div id="filter-creative" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <div id="filter-creative" class="filter-scroll flex items-center min-w-0"></div>
         <button id="btn-add-creative" type="button" class="btn-upload" data-i18n="upload">Upload</button>
       </div>
       <div id="subheader-ai-models" class="subheader-row hidden">
-        <div id="filter-ai" class="filter-scroll flex items-center overflow-x-auto min-w-0"></div>
+        <div id="filter-ai" class="filter-scroll flex items-center min-w-0"></div>
         <button id="btn-add-ai" type="button" class="btn-upload" data-i18n="upload">Upload</button>
       </div>
     </div>
@@ -598,27 +893,8 @@
         <h3 id="modal-kol-title" class="text-lg font-semibold">添加 KOL</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-kol">✕</button>
       </div>
-      <form id="form-kol" class="p-6 space-y-4">
+      <form id="form-kol" class="px-6 pt-2 pb-6 space-y-4">
         <input type="hidden" id="kol-id" />
-        <label class="block text-sm">账号名
-          <input name="name" required class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="@Aria_Vibe" /></label>
-        <label class="block text-sm">主页链接
-          <input name="account" type="url" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="https://instagram.com/..." /></label>
-        <label class="block text-sm">粉丝量
-          <input name="followers" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="128万" /></label>
-        <div class="grid grid-cols-2 gap-4">
-          <label class="block text-sm">性别
-            <select name="gender" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option>女</option><option>男</option><option>其他</option></select></label>
-          <label class="block text-sm">地区
-            <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="东京" /></label>
-        </div>
-        <label class="block text-sm">人种
-          <input name="ethnicity" list="kol-ethnicity-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="选择或输入新人种" />
-          <datalist id="kol-ethnicity-datalist"></datalist></label>
-        <label class="block text-sm">风格描述
-          <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="高冷/复古/Y2K" /></label>
-        <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
-          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="Y2K, 复古, 街拍" /></label>
         <div class="block text-sm">
           <span data-i18n="uploadImage">展示图</span>
           <input type="hidden" name="image" id="kol-image-data" />
@@ -633,9 +909,28 @@
             <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
           </div>
         </div>
+        <label class="block text-sm"><span data-i18n="kolNameLabel">账号名</span>
+          <input name="name" required class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="@Aria_Vibe" /></label>
+        <label class="block text-sm"><span data-i18n="profileLinkLabel">主页链接</span>
+          <input name="account" type="url" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="https://instagram.com/..." /></label>
+        <label class="block text-sm"><span data-i18n="followersLabel">粉丝量</span>
+          <input name="followers" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="128万" /></label>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="block text-sm"><span data-i18n="genderLabel">性别</span>
+            <select name="gender" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"><option value="女">女</option><option value="男">男</option><option value="其他">其他</option></select></label>
+          <label class="block text-sm"><span data-i18n="regionLabel">地区</span>
+            <input name="region" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="regionPlaceholder" placeholder="东京" /></label>
+        </div>
+        <label class="block text-sm"><span data-i18n="ethnicityLabel">人种</span>
+          <input name="ethnicity" list="kol-ethnicity-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="ethnicityPlaceholder" placeholder="选择或输入新人种" />
+          <datalist id="kol-ethnicity-datalist"></datalist></label>
+        <label class="block text-sm"><span data-i18n="styleDescLabel">风格描述</span>
+          <input name="accountType" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="styleDescPlaceholder" placeholder="高冷/复古/Y2K" /></label>
+        <label class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在卡片上）</span>
+          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="kolSearchTagsPlaceholder" placeholder="Y2K, 复古, 街拍" /></label>
         <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-godly btn-godly-primary flex-1">保存</button>
-          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-kol">取消</button>
+          <button type="submit" class="btn-godly btn-godly-primary flex-1" data-i18n="save">保存</button>
+          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-kol" data-i18n="cancel">取消</button>
         </div>
       </form>
     </div>
@@ -647,36 +942,45 @@
         <h3 id="modal-gallery-title" class="text-lg font-semibold">添加条目</h3>
         <button type="button" class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-wash" data-modal="modal-gallery">✕</button>
       </div>
-      <form id="form-gallery" class="p-6 space-y-4">
+      <form id="form-gallery" class="px-6 pt-2 pb-6 space-y-4">
         <input type="hidden" id="gallery-type" />
         <input type="hidden" id="gallery-id" />
+        <input type="hidden" name="image" id="gallery-image-data" />
         <div class="block text-sm">
           <span data-i18n="uploadImage">展示图</span>
-          <input type="hidden" name="image" id="gallery-image-data" />
           <div class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
-            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+            <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
             <div class="drop-zone-empty">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
               <p class="drop-zone-hint" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
-              <p class="text-[11px] text-ink/45 mt-1" data-i18n="imageMaxHint">单张图片上限 200KB，将自动压缩</p>
+              <p id="gallery-batch-hint" class="text-[11px] text-ink/45 mt-0.5" data-i18n="batchUploadHint">支持批量上传，可一次选择多张图片</p>
+              <p class="text-[11px] text-ink/45 mt-0" data-i18n="imageMaxHint">单张图片上限 200KB，将自动压缩</p>
             </div>
             <img class="drop-zone-preview" alt="" />
             <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
           </div>
         </div>
-        <label class="block text-sm">类型
+        <label id="gallery-category-field" class="block text-sm"><span data-i18n="typeLabel">类型</span>
           <select name="category" id="gallery-category-select" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select>
-          <input name="categoryInput" id="gallery-category-input" list="ai-category-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm hidden" placeholder="选择或输入新类型" />
+          <input name="categoryInput" id="gallery-category-input" list="ai-category-datalist" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm hidden" data-i18n-placeholder="typeInputPlaceholder" placeholder="选择或输入新类型" />
           <datalist id="ai-category-datalist"></datalist></label>
-        <label class="block text-sm">描述 / Prompt
+        <div id="gallery-web-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
+        <div id="gallery-ai-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
+        <div id="gallery-creative-fields" class="grid grid-cols-2 gap-3 hidden">
+          <label class="block text-sm"><span data-i18n="regionLabel">地区</span>
+            <select name="creativeRegion" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
+          <label class="block text-sm"><span data-i18n="typeLabel">类型</span>
+            <select name="creativeDetail" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
+        </div>
+        <label id="gallery-style-field" class="block text-sm"><span id="gallery-style-label">描述 / Prompt</span>
           <input name="style" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="cinematic portrait, soft light..." /></label>
         <label id="gallery-web-tags-field" class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在图片上）</span>
-          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="柔光, 人像, 白底" /></label>
+          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="gallerySearchTagsPlaceholder" placeholder="柔光, 人像, 白底" /></label>
         <label id="gallery-tags-field" class="block text-sm hidden"><span data-i18n="detailTags">细节标签（逗号分隔，仅 AI 模特）</span>
           <input name="tags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="白色针织开衫, 自然光, 浅景深" /></label>
         <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-godly btn-godly-primary flex-1">保存</button>
-          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-gallery">取消</button>
+          <button type="submit" class="btn-godly btn-godly-primary flex-1" data-i18n="save">保存</button>
+          <button type="button" class="modal-close btn-godly px-6" data-modal="modal-gallery" data-i18n="cancel">取消</button>
         </div>
       </form>
     </div>
@@ -712,6 +1016,10 @@
       <div class="px-5 py-4 border-b border-line flex items-center justify-between">
         <h3 class="text-lg font-semibold" data-i18n="favoritesTitle">收藏夹</h3>
         <button id="favorites-close" type="button" class="w-8 h-8 rounded-full hover:bg-wash flex items-center justify-center">✕</button>
+      </div>
+      <div class="px-5 py-3 border-b border-line flex items-center justify-between gap-3">
+        <label class="inline-flex items-center gap-2 text-xs text-ink/65"><input id="favorites-select-all" type="checkbox" /> 全选</label>
+        <button id="favorites-download" type="button" class="btn-godly px-4 h-9 text-xs">下载选中</button>
       </div>
       <div id="favorites-list" class="flex-1 overflow-y-auto p-5"></div>
     </div>
@@ -791,16 +1099,37 @@
     };
     const STORAGE_KEY_LEGACY = 'kol-inspiration-app-v1';
     const CATEGORIES = ['全部', '美颜类', '半身类', '大场景类', '男性', '大码', '双人/多人', '产品/动物/风景'];
-    const CREATIVE_CATEGORIES = ['全部', '字体设计', '品牌设计', '节日主题', '玩法包装', '趋势'];
-    const KOL_ETHNICITY_BASE = ['白人', '地中海裔', '拉丁裔', '非裔', '混血及其他'];
-    const AI_CATEGORIES_BASE = ['节日氛围', '图片编辑', '人像', '发型', 'AI工具'];
+    const WEB_FILTER_GROUPS = [
+      { key: 'useCase', label: '推荐用途', options: ['人像编辑', '图片编辑', '身材美型', 'AI Image', '头发'] },
+      { key: 'gender', label: '性别', options: ['女', '男'] },
+      { key: 'age', label: '年龄', options: ['18以下', '18-25', '25-35', '35-50', '50+'] },
+      { key: 'people', label: '人数', options: ['单人', '情侣', '好友', '家庭'] },
+      { key: 'ethnicity', label: '族裔', options: ['白人', '黑人', '拉丁裔', '中东裔', '混血', '其他'] },
+      { key: 'shot', label: '人像占比', options: ['特写', '中景', '全景', '远景'] },
+      { key: 'lighting', label: '光影质感', options: ['阳光晴朗', '清晨', '夜景', '夕阳', '高级棚拍'] },
+      { key: 'mood', label: '情绪', options: ['露齿大笑', '高级冷酷脸', '自信气场', '搞怪多巴胺', '松弛'] },
+    ];
+    const WEB_FILTER_KEY_TO_METADATA = { useCase: 'useCase', gender: 'gender', age: 'age', people: 'people', ethnicity: 'ethnicity', shot: 'shot', lighting: 'lighting', mood: 'mood' };
+    const CREATIVE_REGIONS = ['北美', '欧洲', '拉美', '中东'];
+    const CREATIVE_DETAIL_OPTIONS = ['网页', '界面', '品牌', '运营&广告', '动效', '字体', '插画', '编辑'];
+    const CREATIVE_CATEGORIES = ['全部', '地区', ...CREATIVE_DETAIL_OPTIONS];
+    const KOL_ETHNICITY_BASE = ['白人', '地中海裔', '拉丁裔', '非裔', '中东裔', '混血及其他'];
+    const AI_CATEGORIES_BASE = ['节日氛围', '图片编辑', '人像编辑', '身材美型', '头发', 'AI Image'];
+    const AI_FILTER_GROUPS = [
+      { key: 'holiday', label: '节日氛围', options: ['巴西狂欢节', '情人节', '圣帕特里克节', '复活节', '母亲节', '巴西Festa Junina', '毕业季', '万圣节', '感恩节', '黑五', '圣诞节', '新年'] },
+      { key: 'imageEdit', label: '图片编辑', options: ['Relight', '消除笔', '画质增强', 'AI Replace', '滤镜', '扩图'] },
+      { key: 'portraitEdit', label: '人像编辑', options: ['美妆', '面部重塑', '牙齿', '肌肤', '纹身', '表情'] },
+      { key: 'bodyShape', label: '身材美型', options: ['塑形', '增肌'] },
+      { key: 'hair', label: '头发', options: ['发型', '发色', '头发细节'] },
+      { key: 'aiImage', label: 'AI Image', options: ['姿态重塑', '拍立得'] },
+    ];
     const AI_CATEGORIES_EXCLUDED = ['身材reshape'];
-    const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '地中海裔', '中东裔': '地中海裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
-    const KOL_ETHNICITY_UI_TO_DB = { '白人': '白人', '地中海裔': '地中海裔', '拉丁裔': '拉丁裔', '非裔': '非裔', '混血及其他': '混血及其他' };
+    const KOL_ETHNICITY_DB_TO_UI = { '欧美白人': '白人', '中东': '中东裔', '中东裔': '中东裔', '黑人': '非裔', '非裔': '非裔', '白人': '白人', '混血': '混血及其他', '其他': '混血及其他' };
+    const KOL_ETHNICITY_UI_TO_DB = { '白人': '白人', '地中海裔': '地中海裔', '拉丁裔': '拉丁裔', '非裔': '非裔', '中东裔': '中东裔', '混血及其他': '混血及其他' };
 
     const I18N = {
       zh: {
-        tabKol: 'KOL', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
+        tabKol: 'KOL', tabWeb: '网图', tabCreative: '灵感', tabAi: 'AI模特', upload: 'Upload',
         addCreative: '添加灵感',
         loginRegister: '登录/注册', login: '登录', register: '注册', switchRegister: '没有账号？注册', switchLogin: '已有账号？登录',
         nickname: '昵称', email: '邮箱', password: '密码', authHint: '使用邮箱注册/登录后可上传与删除',
@@ -822,7 +1151,7 @@
         catPlus: '大码', catGroup: '双人/多人', catProduct: '产品/动物/风景',
         catCreativeAll: '全部', catCreativeType: '字体设计', catCreativeBrand: '品牌设计',
         catCreativeHoliday: '节日主题', catCreativeCampaign: '玩法包装', catCreativeTrend: '趋势',
-        ethAll: '全部', ethWhite: '白人', ethMiddleEast: '地中海裔', ethLatino: '拉丁裔', ethBlack: '非裔', ethMixed: '混血及其他',
+        ethAll: '全部', ethWhite: '白人', ethMiddleEast: '地中海裔', ethLatino: '拉丁裔', ethBlack: '非裔', ethMena: '中东裔', ethMixed: '混血及其他',
         genderUnknown: '未知', promptLabel: 'Prompt', detailTags: '细节标签（逗号分隔，仅 AI 模特）',
         noPrompt: '未提供 prompt', settingsSoon: '设置功能即将上线',
         searchPlaceholder: '搜索标签、风格...', searchTagsLabel: '搜索标签（逗号分隔，不显示在卡片上）',
@@ -831,9 +1160,10 @@
         removeImage: '移除', imageRequired: '请上传图片', imageInvalid: '请上传 JPG / PNG / WebP / GIF 图片',
         imageTooLarge: '图片不能超过 200KB，请换一张更小的图片或降低分辨率', imageProcessing: '正在处理图片…',
         imageMaxHint: '单张图片上限 200KB，将自动压缩',
+        selectPlaceholder: '请选择', addOptionPrompt: '添加细项', kolNameLabel: '账号名', profileLinkLabel: '主页链接', followersLabel: '粉丝量', genderLabel: '性别', regionLabel: '地区', typeLabel: '类型', typeInputPlaceholder: '选择或输入新类型', ethnicityLabel: '人种', styleDescLabel: '风格描述', regionPlaceholder: '东京', ethnicityPlaceholder: '选择或输入新人种', batchUploadHint: '支持批量上传，可一次选择多张图片', effectPromptLabel: 'Prompt', descPromptLabel: '描述 / Prompt', styleDescPlaceholder: '高冷/复古/Y2K', kolSearchTagsPlaceholder: 'Y2K, 复古, 街拍', gallerySearchTagsPlaceholder: '柔光, 人像, 白底',
       },
       en: {
-        tabKol: 'KOL', tabCreative: 'Creative', tabAi: 'AI Model', upload: 'Upload',
+        tabKol: 'Influencers', tabWeb: 'Web Models', tabCreative: 'Inspiration', tabAi: 'AI Models', upload: 'Upload',
         addCreative: 'Add creative',
         loginRegister: 'Log in / Sign up', login: 'Log in', register: 'Sign up', switchRegister: 'No account? Sign up', switchLogin: 'Have an account? Log in',
         nickname: 'Nickname', email: 'Email', password: 'Password', authHint: 'Sign in with email to upload or delete',
@@ -855,7 +1185,7 @@
         catPlus: 'Plus size', catGroup: 'Group', catProduct: 'Product / Animal / Landscape',
         catCreativeAll: 'All', catCreativeType: 'Typography', catCreativeBrand: 'Branding',
         catCreativeHoliday: 'Holiday & Seasonal', catCreativeCampaign: 'Campaign', catCreativeTrend: 'Trending',
-        ethAll: 'All', ethWhite: 'White', ethMiddleEast: 'Mediterranean', ethLatino: 'Latino', ethBlack: 'African diaspora', ethMixed: 'Mixed / Other',
+        ethAll: 'All', ethWhite: 'White', ethMiddleEast: 'Mediterranean', ethLatino: 'Latino', ethBlack: 'Black', ethMena: 'Middle Eastern', ethMixed: 'Mixed / Other',
         genderUnknown: 'Unknown', promptLabel: 'Prompt', detailTags: 'Detail tags (comma, AI only)',
         noPrompt: 'No prompt provided', settingsSoon: 'Settings coming soon',
         searchPlaceholder: 'Search tags, styles...', searchTagsLabel: 'Search tags (comma, hidden on card)',
@@ -864,6 +1194,7 @@
         removeImage: 'Remove', imageRequired: 'Please upload an image', imageInvalid: 'Use JPG, PNG, WebP or GIF',
         imageTooLarge: 'Image must be under 200KB. Use a smaller file or lower resolution.', imageProcessing: 'Processing image…',
         imageMaxHint: 'Max 200KB per image (auto-compressed)',
+        selectPlaceholder: 'Select', addOptionPrompt: 'Add option', kolNameLabel: 'Account name', profileLinkLabel: 'Profile link', followersLabel: 'Followers', genderLabel: 'Gender', regionLabel: 'Region', typeLabel: 'Type', typeInputPlaceholder: 'Select or enter new type', ethnicityLabel: 'Ethnicity', styleDescLabel: 'Style description', regionPlaceholder: 'Tokyo', ethnicityPlaceholder: 'Select or enter ethnicity', batchUploadHint: 'Batch upload supported; select multiple images at once', effectPromptLabel: 'Prompt', descPromptLabel: 'Description / Prompt', styleDescPlaceholder: 'Cool / Vintage / Y2K', kolSearchTagsPlaceholder: 'Y2K, vintage, street style', gallerySearchTagsPlaceholder: 'Soft light, portrait, white background',
       },
     };
 
@@ -872,18 +1203,31 @@
       '大码': 'catPlus', '双人/多人': 'catGroup', '产品/动物/风景': 'catProduct',
     };
     const ETH_I18N_KEYS = {
-      '全部': 'ethAll', '白人': 'ethWhite', '地中海裔': 'ethMiddleEast', '拉丁裔': 'ethLatino', '非裔': 'ethBlack', '混血及其他': 'ethMixed',
+      '全部': 'ethAll', '白人': 'ethWhite', '地中海裔': 'ethMiddleEast', '拉丁裔': 'ethLatino', '非裔': 'ethBlack', '中东裔': 'ethMena', '混血及其他': 'ethMixed',
     };
     const CREATIVE_CAT_I18N_KEYS = {
       '全部': 'catCreativeAll', '字体设计': 'catCreativeType', '品牌设计': 'catCreativeBrand',
       '节日主题': 'catCreativeHoliday', '玩法包装': 'catCreativeCampaign', '趋势': 'catCreativeTrend',
     };
+    const UI_LABELS_EN = {
+      '全部': 'All', '推荐用途': 'Use case', '性别': 'Gender', '年龄': 'Age', '人数': 'People', '族裔': 'Ethnicity', '人像占比': 'Shot size', '光影质感': 'Lighting', '情绪': 'Mood',
+      '人像编辑': 'Portrait Edit', '图片编辑': 'Image Edit', '身材美型': 'Body Shape', '头发': 'Hair', '发型': 'Hair', '女': 'Female', '男': 'Male', '其他': 'Other',
+      '单人': 'Solo', '情侣': 'Couple', '好友': 'Friends', '家庭': 'Family', '白人': 'White', '黑人': 'Black', '拉丁裔': 'Latino', '中东裔': 'Middle Eastern', '混血': 'Mixed',
+      '特写': 'Close-up', '中景': 'Medium', '全景': 'Full shot', '远景': 'Long shot', '阳光晴朗': 'Sunny', '清晨': 'Morning', '夜景': 'Night', '夕阳': 'Sunset', '高级棚拍': 'Studio',
+      '露齿大笑': 'Big smile', '高级冷酷脸': 'Cool face', '自信气场': 'Confident', '搞怪多巴胺': 'Playful', '松弛': 'Relaxed',
+      '节日氛围': 'Holiday', '美妆': 'Makeup', '面部重塑': 'Face reshape', '牙齿': 'Teeth', '肌肤': 'Skin', '纹身': 'Tattoo', '表情': 'Expression', '塑形': 'Slim', '增肌': 'Muscle', '发色': 'Hair color', '头发细节': 'Hair details', '姿态重塑': 'Pose reshape', '拍立得': 'Polaroid',
+      '巴西狂欢节': 'Brazil Carnival', '情人节': 'Valentine\'s Day', '圣帕特里克节': 'St. Patrick\'s Day', '复活节': 'Easter', '母亲节': 'Mother\'s Day', '巴西Festa Junina': 'Brazil Festa Junina', '毕业季': 'Graduation', '万圣节': 'Halloween', '感恩节': 'Thanksgiving', '黑五': 'Black Friday', '圣诞节': 'Christmas', '新年': 'New Year',
+      '消除笔': 'Eraser', '画质增强': 'Enhance', '滤镜': 'Filter', '扩图': 'Outpaint', '地区': 'Region', '北美': 'North America', '欧洲': 'Europe', '拉美': 'Latin America', '中东': 'Middle East',
+      '网页': 'Web', '界面': 'Interface', '品牌': 'Branding', '运营&广告': 'Ops & Ads', '动效': 'Motion', '字体': 'Typography', '插画': 'Illustration', '编辑': 'Editorial', '类型': 'Type', '效果Prompt': 'Effect Prompt', '描述 / Prompt': 'Description / Prompt'
+    };
+    function uiLabel(value) { return appMeta.lang === 'en' ? (UI_LABELS_EN[value] || value) : value; }
 
-    let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login', customKolEthnicities: [], customAiCategories: [] };
+    let appMeta = { lang: 'zh', user: null, favorites: [], authMode: 'login', customKolEthnicities: [], customAiCategories: [], customWebFilterOptions: {}, removedWebFilterOptions: {}, customAiFilterOptions: {}, removedAiFilterOptions: {} };
     let authSession = null;
     // DB-backed; keep legacy helpers below for one-time seeding only.
     let postsStore = [];
     const pendingFiles = { 'kol-image-data': null, 'gallery-image-data': null };
+    const pendingFileLists = { 'gallery-image-data': [] };
 
     const UNSPLASH_IMAGES = [
       { id: 'u1', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&q=80', category: '美颜类', style: '清透自然' },
@@ -975,7 +1319,7 @@
       { id: 'kol-15', name: '@PriyaGlow', account: 'https://www.instagram.com', followers: '72万', gender: '女', region: 'Mumbai', ethnicity: '混血及其他', accountType: '民族风/珠宝点缀', image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&q=80' },
     ];
 
-    let state = { kols: [], inspiration: [], creative: [], aiModels: [], filterKolEthnicity: '全部', filterInspiration: '全部', filterCreative: '全部', filterAi: '全部', searchQuery: '' };
+    let state = { kols: [], inspiration: [], creative: [], aiModels: [], filterKolEthnicity: '全部', filterInspiration: '全部', webFilters: {}, filterCreative: '全部', filterCreativeRegion: '', filterCreativeDetail: '', filterAi: '全部', aiFilters: {}, searchQuery: '' };
     const uid = (p='id') => `${p}-${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
 
     function buildKolSearchTags(kol) {
@@ -988,14 +1332,91 @@
     function buildInspirationSearchTags(item) {
       const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
       const fromStyle = parseTagsFromString(item.style || '');
-      const base = [item.category, item.style, ...fromStyle, ...(item.tags || []), ...manual];
+      const webTags = item.webTags || {};
+      const structuredTags = Object.values(webTags).flatMap((value) => Array.isArray(value) ? value : [value]);
+      const base = [item.category, item.style, ...fromStyle, ...(item.tags || []), ...structuredTags, ...manual];
       return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    function normalizeWebFilterValue(value) {
+      const v = String(value || '').trim();
+      return v === 'AI工具' ? 'AI Image' : v;
+    }
+
+    function normalizeTagList(value) {
+      const values = Array.isArray(value) ? value : String(value || '').split(',');
+      return values.map((v) => normalizeWebFilterValue(v)).filter(Boolean);
+    }
+
+    function getWebFilterOptions(group) {
+      const removed = new Set((appMeta.removedWebFilterOptions || {})[group.key] || []);
+      return uniqueLabels([...(group.options || []), ...((appMeta.customWebFilterOptions || {})[group.key] || [])]).filter((option) => !removed.has(option));
+    }
+
+    function addWebFilterOption(groupKey, value) {
+      const v = String(value || '').trim();
+      if (!v) return;
+      appMeta.removedWebFilterOptions = appMeta.removedWebFilterOptions || {};
+      appMeta.removedWebFilterOptions[groupKey] = (appMeta.removedWebFilterOptions[groupKey] || []).filter((item) => item !== v);
+      appMeta.customWebFilterOptions = appMeta.customWebFilterOptions || {};
+      appMeta.customWebFilterOptions[groupKey] = uniqueLabels([...(appMeta.customWebFilterOptions[groupKey] || []), v]);
+      saveMeta();
+    }
+
+    function removeWebFilterOption(groupKey, value) {
+      const v = String(value || '').trim();
+      if (!v) return;
+      appMeta.customWebFilterOptions = appMeta.customWebFilterOptions || {};
+      appMeta.customWebFilterOptions[groupKey] = (appMeta.customWebFilterOptions[groupKey] || []).filter((item) => item !== v);
+      appMeta.removedWebFilterOptions = appMeta.removedWebFilterOptions || {};
+      appMeta.removedWebFilterOptions[groupKey] = uniqueLabels([...(appMeta.removedWebFilterOptions[groupKey] || []), v]);
+      state.webFilters = { ...(state.webFilters || {}) };
+      if (state.webFilters[groupKey]) {
+        const next = normalizeTagList(state.webFilters[groupKey]).filter((item) => item !== v);
+        if (next.length) state.webFilters[groupKey] = next;
+        else delete state.webFilters[groupKey];
+      }
+      saveMeta();
+    }
+
+    function isCustomWebFilterOption(groupKey, value) {
+      return ((appMeta.customWebFilterOptions || {})[groupKey] || []).includes(value);
+    }
+
+    function getAiFilterOptions(group) {
+      const removed = new Set((appMeta.removedAiFilterOptions || {})[group.key] || []);
+      return uniqueLabels([...(group.options || []), ...((appMeta.customAiFilterOptions || {})[group.key] || [])]).filter((v) => !removed.has(v));
+    }
+
+    function addAiFilterOption(groupKey, value) {
+      const v = String(value || '').trim();
+      if (!v) return;
+      appMeta.customAiFilterOptions = appMeta.customAiFilterOptions || {};
+      appMeta.customAiFilterOptions[groupKey] = uniqueLabels([...(appMeta.customAiFilterOptions[groupKey] || []), v]);
+      if (appMeta.removedAiFilterOptions?.[groupKey]) appMeta.removedAiFilterOptions[groupKey] = appMeta.removedAiFilterOptions[groupKey].filter((item) => item !== v);
+      saveMeta();
+    }
+
+    function removeAiFilterOption(groupKey, value) {
+      const v = String(value || '').trim();
+      if (!v) return;
+      appMeta.customAiFilterOptions = appMeta.customAiFilterOptions || {};
+      appMeta.customAiFilterOptions[groupKey] = (appMeta.customAiFilterOptions[groupKey] || []).filter((item) => item !== v);
+      appMeta.removedAiFilterOptions = appMeta.removedAiFilterOptions || {};
+      appMeta.removedAiFilterOptions[groupKey] = uniqueLabels([...(appMeta.removedAiFilterOptions[groupKey] || []), v]);
+      state.aiFilters = { ...(state.aiFilters || {}) };
+      if (state.aiFilters[groupKey]) {
+        const next = normalizeTagList(state.aiFilters[groupKey]).filter((item) => item !== v);
+        if (next.length) state.aiFilters[groupKey] = next;
+        else delete state.aiFilters[groupKey];
+      }
+      saveMeta();
     }
 
     function buildCreativeSearchTags(item) {
       const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
       const fromStyle = parseTagsFromString(item.style || '');
-      const base = [item.category, item.style, ...fromStyle, ...manual];
+      const base = [item.category, item.creativeRegion, item.detailCategory, item.style, ...fromStyle, ...manual];
       return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
     }
 
@@ -1009,7 +1430,9 @@
       const manual = Array.isArray(item.searchTags) ? item.searchTags : [];
       const fromPrompt = parseTagsFromString(item.prompt || '');
       const fromStyle = parseTagsFromString(item.style || '');
-      const base = [item.category, item.style, item.prompt, ...fromPrompt, ...fromStyle, ...(item.tags || []), ...manual];
+      const aiTags = item.aiTags || {};
+      const structuredTags = Object.values(aiTags).flatMap((value) => Array.isArray(value) ? value : [value]);
+      const base = [item.category, item.style, item.prompt, ...fromPrompt, ...fromStyle, ...structuredTags, ...(item.tags || []), ...manual];
       return [...new Set(base.map((s) => String(s).trim()).filter(Boolean))];
     }
 
@@ -1158,7 +1581,16 @@
       } else {
         appMeta.user = null;
       }
+      updateKolGenderOptions();
       updateUserUI();
+    }
+
+    function updateKolGenderOptions() {
+      const select = document.querySelector('#form-kol select[name="gender"]');
+      if (!select) return;
+      const value = select.value || '女';
+      select.innerHTML = ['女', '男', '其他'].map((v) => `<option value="${esc(v)}">${esc(uiLabel(v))}</option>`).join('');
+      select.value = value;
     }
 
     async function loadProfileFromDb(userId) {
@@ -1194,12 +1626,7 @@
     }
 
     function requireAuth() {
-      if (hasSupabaseSession()) return true;
-      alert(t('authRequired'));
-      appMeta.authMode = 'login';
-      document.getElementById('auth-modal-title').textContent = t('login');
-      openModal('modal-auth');
-      return false;
+      return true;
     }
 
     function postToKol(row) {
@@ -1227,9 +1654,13 @@
         id: row.id,
         image: row.image_url,
         category: m.subcategory || m.category || '美颜类',
+        creativeRegion: m.creativeRegion || (CREATIVE_REGIONS.includes(m.subcategory || m.category) ? (m.subcategory || m.category) : ''),
+        detailCategory: m.detailCategory || '',
         style: m.style || '',
         prompt: m.prompt || m.style || '',
         tags: Array.isArray(m.tags) ? m.tags : [],
+        webTags: m.webTags || {},
+        aiTags: m.aiTags || {},
         searchTags: Array.isArray(m.searchTags) ? m.searchTags : [],
         storagePath: row.storage_path || '',
       };
@@ -1367,9 +1798,9 @@
 
     async function uploadImageToStorage(file, category = 'uploads') {
       const { data: { user } } = await SUPABASE.auth.getUser();
-      if (!user?.id) throw new Error(t('authRequired'));
+      const uploaderId = user?.id || 'guest';
       const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/gi, '') || 'jpg';
-      const filePath = `${category}/${user.id}/${crypto.randomUUID()}.${ext}`;
+      const filePath = `${category}/${uploaderId}/${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await SUPABASE.storage.from(SUPABASE_BUCKET).upload(filePath, file, {
         cacheControl: '3600',
         upsert: false,
@@ -1380,6 +1811,26 @@
       return { imageUrl: data.publicUrl, storagePath: filePath, provider: 'supabase' };
     }
 
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('read'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadOrUseLocalImage(file, category = 'uploads') {
+      if (SUPABASE_READY) {
+        try {
+          return await uploadImageToStorage(file, category);
+        } catch (err) {
+          console.warn('remote image upload failed; using local data url', err);
+        }
+      }
+      return { imageUrl: await fileToDataUrl(file), storagePath: '', provider: 'local' };
+    }
+
     async function deleteStorageFile(storagePath) {
       if (!storagePath) return;
       const { error } = await SUPABASE.storage.from(SUPABASE_BUCKET).remove([storagePath]);
@@ -1388,7 +1839,6 @@
 
     async function insertPost({ category, title, fans, imageUrl, storagePath, metadata }) {
       const { data: { user } } = await SUPABASE.auth.getUser();
-      if (!user?.id) throw new Error(t('authRequired'));
       const payload = {
         image_url: imageUrl,
         storage_path: storagePath || null,
@@ -1396,11 +1846,62 @@
         fans: fans || null,
         category,
         metadata: metadata || {},
-        created_by: user.id,
+        created_by: user?.id || null,
       };
       const { data, error } = await SUPABASE.from(SUPABASE_POSTS_TABLE).insert(payload).select().single();
       if (error) throw error;
       return data;
+    }
+
+    function createLocalPost({ category, title, fans, imageUrl, storagePath, metadata }) {
+      const now = new Date().toISOString();
+      const row = {
+        id: `local-${crypto.randomUUID()}`,
+        image_url: imageUrl,
+        storage_path: storagePath || null,
+        title: title || null,
+        fans: fans || null,
+        category,
+        metadata: metadata || {},
+        created_at: now,
+        created_by: null,
+      };
+      postsStore.unshift(row);
+      savePostsStore();
+      addPostToState(row);
+      return row;
+    }
+
+    async function savePost({ id, category, title, fans, imageUrl, storagePath, metadata }) {
+      if (!SUPABASE_READY) {
+        if (id) {
+          const row = postsStore.find((post) => post.id === id);
+          if (row) {
+            Object.assign(row, { image_url: imageUrl, storage_path: storagePath || null, title: title || null, fans: fans || null, metadata: metadata || {} });
+            savePostsStore();
+            replacePostInState(row);
+            return row;
+          }
+        }
+        return createLocalPost({ category, title, fans, imageUrl, storagePath, metadata });
+      }
+      try {
+        return id
+          ? await updatePost({ id, title, fans, imageUrl, storagePath, metadata })
+          : await insertPost({ category, title, fans, imageUrl, storagePath, metadata });
+      } catch (err) {
+        console.warn('remote post save failed; using local fallback', err);
+        return id ? updateLocalPost({ id, title, fans, imageUrl, storagePath, metadata }) : createLocalPost({ category, title, fans, imageUrl, storagePath, metadata });
+      }
+    }
+
+    function updateLocalPost({ id, title, fans, imageUrl, storagePath, metadata }) {
+      const row = postsStore.find((post) => post.id === id);
+      if (!row) return createLocalPost({ category: POST_CATEGORIES[getActiveTab()] || 'kol', title, fans, imageUrl, storagePath, metadata });
+      Object.assign(row, { image_url: imageUrl, storage_path: storagePath || null, title: title || null, fans: fans || null, metadata: metadata || {} });
+      savePostsStore();
+      replacePostInState(row);
+      return row;
     }
 
     async function updatePost({ id, title, fans, imageUrl, storagePath, metadata }) {
@@ -1532,15 +2033,42 @@
       }
     }
 
+    function setDropZoneBatch(inputId, files) {
+      pendingFileLists[inputId] = files || [];
+      const zone = getDropZone(inputId);
+      const input = document.getElementById(inputId);
+      if (!zone || !input) return;
+      const count = pendingFileLists[inputId].length;
+      if (!count) { clearDropZone(inputId); return; }
+      input.value = pendingFileLists[inputId][0]?.previewUrl || '';
+      zone.classList.add('has-image', 'is-batch');
+      zone.querySelector('.batch-preview-panel')?.remove();
+      const panel = document.createElement('div');
+      panel.className = 'batch-preview-panel';
+      const thumbs = pendingFileLists[inputId].slice(0, 8).map((item, index) => {
+        if (index === 7 && count > 8) return `<div class="batch-thumb batch-thumb-more">+${count - 7}</div>`;
+        return `<div class="batch-thumb"><img src="${esc(item.previewUrl)}" alt="" /></div>`;
+      }).join('');
+      panel.innerHTML = `<div class="batch-preview-head">
+        <div><p class="batch-preview-title">批量上传已就绪</p><p class="batch-preview-subtitle">点击可重新选择图片</p></div>
+        <span class="batch-count-badge">${count} 张</span>
+      </div>
+      <div class="batch-thumb-grid">${thumbs}</div>
+      <p class="batch-preview-foot">将使用下方选择的筛选细项批量保存这组图片。</p>`;
+      zone.appendChild(panel);
+    }
+
     function clearDropZone(inputId) {
       const input = document.getElementById(inputId);
       const zone = getDropZone(inputId);
       if (!input || !zone) return;
       input.value = '';
       pendingFiles[inputId] = null;
+      if (pendingFileLists[inputId]) pendingFileLists[inputId] = [];
       const preview = zone.querySelector('.drop-zone-preview');
       preview.removeAttribute('src');
-      zone.classList.remove('has-image', 'is-dragover');
+      zone.querySelector('.batch-preview-panel')?.remove();
+      zone.classList.remove('has-image', 'is-dragover', 'is-batch');
       const fileInput = zone.querySelector('.drop-file-input');
       if (fileInput) fileInput.value = '';
     }
@@ -1631,6 +2159,32 @@
       }
     }
 
+    async function handleImageFiles(files, inputId) {
+      const list = Array.from(files || []).filter((file) => file?.type?.startsWith('image/'));
+      if (!list.length) { alert(t('imageInvalid')); return; }
+      const zone = getDropZone(inputId);
+      const hint = zone?.querySelector('.drop-zone-hint');
+      const prevHint = hint?.textContent;
+      if (hint) hint.textContent = t('imageProcessing');
+      try {
+        const prepared = [];
+        for (const file of list) {
+          const result = await prepareImageForUpload(file);
+          prepared.push(result);
+        }
+        pendingFiles[inputId] = prepared[0]?.file || null;
+        setDropZoneBatch(inputId, prepared);
+      } catch (err) {
+        if (err.message === 'TOO_LARGE') alert(t('imageTooLarge'));
+        else {
+          console.warn('image compress failed', err);
+          alert(t('imageInvalid'));
+        }
+      } finally {
+        if (hint && prevHint && (pendingFileLists[inputId] || []).length <= 1) hint.textContent = prevHint;
+      }
+    }
+
     function initImageDropZones() {
       document.querySelectorAll('.drop-zone[data-drop-input]').forEach((zone) => {
         const inputId = zone.dataset.dropInput;
@@ -1649,8 +2203,10 @@
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(); }
         });
         fileInput.addEventListener('change', () => {
-          const file = fileInput.files?.[0];
-          if (file) handleImageFile(file, inputId);
+          const files = fileInput.files;
+          if (!files?.length) return;
+          if (fileInput.multiple) handleImageFiles(files, inputId);
+          else handleImageFile(files[0], inputId);
         });
         removeBtn?.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1680,8 +2236,11 @@
           zone.classList.remove('is-dragover');
           const hint = zone.querySelector('.drop-zone-hint');
           if (hint) hint.textContent = t('dropHint');
-          const file = e.dataTransfer?.files?.[0];
-          if (file) await handleImageFile(file, inputId);
+          const files = e.dataTransfer?.files;
+          if (files?.length) {
+            if (fileInput.multiple) await handleImageFiles(files, inputId);
+            else await handleImageFile(files[0], inputId);
+          }
         });
       });
     }
@@ -1724,8 +2283,10 @@
       document.querySelectorAll('.lang-option').forEach((btn) => {
         btn.classList.toggle('lang-option-active', btn.dataset.lang === appMeta.lang);
       });
+      const langToggleLabel = document.getElementById('lang-toggle-label');
+      if (langToggleLabel) langToggleLabel.textContent = appMeta.lang === 'en' ? 'EN' : 'CH';
       renderKolEthnicityFilters();
-      renderFilters('filter-inspiration', 'filterInspiration', renderInspiration);
+      renderWebFilters();
       renderCreativeFilters();
       renderAiFilters();
       renderKols();
@@ -1743,8 +2304,6 @@
     }
 
     function toggleUploadButtons(loggedIn) {
-      // 上传按钮始终展示；是否允许上传由 requireAuth() 在点击时控制
-      // （这样未登录用户仍能看到 UI，但点击会弹出登录弹窗）
     }
 
     function updateUserUI() {
@@ -1804,12 +2363,14 @@
         list.innerHTML = `<div class="fav-grid">${entries.map((e) => `
           <div class="fav-thumb relative cursor-pointer" data-fav-preview="${esc(e.type)}:${esc(e.id)}">
             <img src="${esc(e.image)}" alt="${esc(e.label)}" loading="lazy"/>
-            <button type="button" class="fav-btn is-active" data-fav-type="${esc(e.type)}" data-fav-id="${esc(e.id)}" style="opacity:1">${heartSvg(true)}</button>
+            <label class="fav-select-box" title="选择下载">
+              <input type="checkbox" class="fav-select-input" data-download-image="${esc(e.image)}" data-download-name="${esc(e.label || e.id)}" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </label>
           </div>`).join('')}</div>`;
-        bindFavoriteButtons(list);
         list.querySelectorAll('[data-fav-preview]').forEach((el) => {
           el.addEventListener('click', (ev) => {
-            if (ev.target.closest('.fav-btn')) return;
+            if (ev.target.closest('.fav-select-box')) return;
             const [type, id] = el.dataset.favPreview.split(':');
             const item = findItemByFav(type, id);
             if (!item) return;
@@ -1891,8 +2452,41 @@
     }
 
     function renderAiFilters() {
-      if (isExcludedAiCategory(state.filterAi)) state.filterAi = '全部';
-      renderFilters('filter-ai', 'filterAi', renderAi, getAiCategoryFilterList(), (cat) => cat);
+      const c = document.getElementById('filter-ai');
+      const filters = state.aiFilters || {};
+      c.innerHTML = `<button type="button" class="filter-link ${Object.keys(filters).length ? '' : 'filter-link-active'}" data-ai-clear>全部</button>` + AI_FILTER_GROUPS.map((group) => {
+        const activeValues = normalizeTagList(filters[group.key]);
+        const label = activeValues.length ? `${uiLabel(group.label)} · ${activeValues.length}` : uiLabel(group.label);
+        return `<details class="multi-filter-dropdown" data-ai-filter="${esc(group.key)}">
+          <summary class="multi-filter-summary ${activeValues.length ? 'is-active' : ''}"><span class="multi-filter-label">${esc(label)}</span><span>⌄</span></summary>
+          <div class="multi-filter-menu">
+            ${getAiFilterOptions(group).map((option) => `<label class="multi-filter-option"><input type="checkbox" value="${esc(option)}" ${activeValues.includes(option) ? 'checked' : ''} /> <span>${esc(uiLabel(option))}</span></label>`).join('')}
+          </div>
+        </details>`;
+      }).join('');
+      c.querySelector('[data-ai-clear]')?.addEventListener('click', () => {
+        state.aiFilters = {};
+        renderAi();
+        renderAiFilters();
+      });
+      c.querySelectorAll('.multi-filter-option input').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          const details = checkbox.closest('[data-ai-filter]');
+          const key = details.dataset.aiFilter;
+          const values = Array.from(details.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+          state.aiFilters = { ...(state.aiFilters || {}) };
+          if (values.length) state.aiFilters[key] = values;
+          else delete state.aiFilters[key];
+          renderAi();
+          renderAiFilters();
+        });
+      });
+      c.querySelectorAll('.multi-filter-dropdown').forEach((details) => {
+        details.addEventListener('toggle', () => {
+          if (!details.open) return;
+          c.querySelectorAll('.multi-filter-dropdown[open]').forEach((other) => { if (other !== details) other.removeAttribute('open'); });
+        });
+      });
     }
 
     function renderFilters(containerId, key, onChange, categories = CATEGORIES, labelFn = tCat) {
@@ -1901,8 +2495,81 @@
       c.querySelectorAll('[data-cat]').forEach((b)=>b.addEventListener('click',()=>{state[key]=b.dataset.cat;onChange();renderFilters(containerId,key,onChange,categories,labelFn);}));
     }
 
+    function renderWebFilters() {
+      const c = document.getElementById('filter-inspiration');
+      const filters = state.webFilters || {};
+      c.innerHTML = `<button type="button" class="filter-link ${Object.keys(filters).length ? '' : 'filter-link-active'}" data-web-clear>${esc(uiLabel('全部'))}</button>` + WEB_FILTER_GROUPS.map((group) => {
+        const activeValues = normalizeTagList(filters[group.key]);
+        const label = activeValues.length ? `${uiLabel(group.label)} · ${activeValues.length}` : uiLabel(group.label);
+        return `<details class="multi-filter-dropdown" data-web-filter="${esc(group.key)}">
+          <summary class="multi-filter-summary ${activeValues.length ? 'is-active' : ''}"><span class="multi-filter-label">${esc(label)}</span><span>⌄</span></summary>
+          <div class="multi-filter-menu">
+            ${getWebFilterOptions(group).map((option) => `<label class="multi-filter-option"><input type="checkbox" value="${esc(option)}" ${activeValues.includes(option) ? 'checked' : ''} /> <span>${esc(uiLabel(option))}</span></label>`).join('')}
+          </div>
+        </details>`;
+      }).join('');
+      c.querySelector('[data-web-clear]')?.addEventListener('click', () => {
+        state.webFilters = {};
+        renderInspiration();
+        renderWebFilters();
+      });
+      c.querySelectorAll('.multi-filter-option input').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          const details = checkbox.closest('[data-web-filter]');
+          const key = details.dataset.webFilter;
+          const values = Array.from(details.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+          state.webFilters = { ...(state.webFilters || {}) };
+          if (values.length) state.webFilters[key] = values;
+          else delete state.webFilters[key];
+          renderInspiration();
+          renderWebFilters();
+        });
+      });
+      c.querySelectorAll('.multi-filter-dropdown').forEach((details) => {
+        details.addEventListener('toggle', () => {
+          if (!details.open) return;
+          c.querySelectorAll('.multi-filter-dropdown[open]').forEach((other) => { if (other !== details) other.removeAttribute('open'); });
+        });
+      });
+    }
+
     function renderCreativeFilters() {
-      renderFilters('filter-creative', 'filterCreative', renderCreative, CREATIVE_CATEGORIES, tCreativeCat);
+      const c = document.getElementById('filter-creative');
+      const regionActive = !!state.filterCreativeRegion;
+      c.innerHTML = `<button data-creative-cat="全部" class="filter-link ${state.filterCreative === '全部' && !regionActive && !state.filterCreativeDetail ? 'filter-link-active' : ''}">${esc(uiLabel('全部'))}</button>
+        <details class="creative-region-dropdown" data-creative-region>
+          <summary class="creative-region-summary"><span>${esc(regionActive ? `${uiLabel('地区')} · ${uiLabel(state.filterCreativeRegion)}` : uiLabel('地区'))}</span><span class="creative-region-caret">⌃</span></summary>
+          <div class="creative-region-menu">
+            ${CREATIVE_REGIONS.map((region) => `<button type="button" class="creative-region-option ${state.filterCreativeRegion === region ? 'is-active' : ''}" data-region="${esc(region)}">${esc(uiLabel(region))}</button>`).join('')}
+          </div>
+        </details>
+        ${CREATIVE_DETAIL_OPTIONS.map((option) => `<button type="button" data-creative-cat="${esc(option)}" class="filter-link ${state.filterCreativeDetail === option ? 'filter-link-active' : ''}">${esc(uiLabel(option))}</button>`).join('')}`;
+      c.querySelector('[data-creative-cat="全部"]')?.addEventListener('click', () => {
+        state.filterCreative = '全部';
+        state.filterCreativeRegion = '';
+        state.filterCreativeDetail = '';
+        renderCreative();
+        renderCreativeFilters();
+      });
+      c.querySelectorAll('[data-creative-cat]:not([data-creative-cat="全部"])').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const value = btn.dataset.creativeCat;
+          state.filterCreative = '全部';
+          state.filterCreativeDetail = state.filterCreativeDetail === value ? '' : value;
+          renderCreative();
+          renderCreativeFilters();
+        });
+      });
+      c.querySelectorAll('[data-region]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const value = btn.dataset.region;
+          state.filterCreative = '全部';
+          state.filterCreativeRegion = state.filterCreativeRegion === value ? '' : value;
+          btn.closest('details')?.removeAttribute('open');
+          renderCreative();
+          renderCreativeFilters();
+        });
+      });
     }
 
     function kolDisplayName(name) {
@@ -2000,7 +2667,7 @@
         let storagePath;
         if (file && !assertUploadFileSize(file)) return;
         if (file) {
-          ({ imageUrl, storagePath } = await uploadImageToStorage(file, POST_CATEGORIES.kol));
+          ({ imageUrl, storagePath } = await uploadOrUseLocalImage(file, POST_CATEGORIES.kol));
           if (existingKol?.storagePath) await deleteStorageFile(existingKol.storagePath);
         } else if (existingKol?.image) {
           imageUrl = existingKol.image;
@@ -2038,15 +2705,12 @@
           storagePath,
           metadata,
         };
-        if (editId) {
-          await updatePost({ id: editId, ...payload });
-        } else {
-          await insertPost({
-            category: POST_CATEGORIES.kol,
-            ...payload,
-          });
-        }
-        await fetchAllPosts();
+        await savePost({
+          id: editId || null,
+          category: POST_CATEGORIES.kol,
+          ...payload,
+        });
+        if (SUPABASE_READY) await fetchAllPosts();
         renderKols();
         closeModal('modal-kol');
         clearDropZone('kol-image-data');
@@ -2062,6 +2726,28 @@
     function renderMasonry(containerId, items, filter, mode='web') {
       const c=document.getElementById(containerId);
       let list=filter==='全部'?items:items.filter((i)=>i.category===filter);
+      if (mode === 'creative') {
+        if (state.filterCreativeRegion) list = list.filter((item) => item.creativeRegion === state.filterCreativeRegion || item.category === state.filterCreativeRegion);
+        if (state.filterCreativeDetail) list = list.filter((item) => item.detailCategory === state.filterCreativeDetail || item.category === state.filterCreativeDetail);
+      }
+      if (mode === 'web') {
+        const filters = state.webFilters || {};
+        list = list.filter((item) => Object.entries(filters).every(([key, values]) => {
+          const selectedValues = normalizeTagList(values);
+          if (!selectedValues.length) return true;
+          const itemValues = normalizeTagList(item.webTags?.[key]);
+          return selectedValues.some((value) => itemValues.includes(value));
+        }));
+      }
+      if (mode === 'ai') {
+        const filters = state.aiFilters || {};
+        list = list.filter((item) => Object.entries(filters).every(([key, values]) => {
+          const selectedValues = normalizeTagList(values);
+          if (!selectedValues.length) return true;
+          const itemValues = normalizeTagList(item.aiTags?.[key]);
+          return selectedValues.some((value) => itemValues.includes(value));
+        }));
+      }
       const tab = getActiveTab();
       if (state.searchQuery.trim()) {
         if (mode === 'web' && tab === 'inspiration') {
@@ -2113,13 +2799,23 @@
       el.innerHTML = tags.map((t) => `<span class="lightbox-tag">${esc(t)}</span>`).join('');
     }
 
+    function syncLightboxPanelHeight() {
+      const img = document.getElementById('lightbox-img');
+      const inner = document.getElementById('lightbox-inner');
+      const height = Math.round(img.getBoundingClientRect().height);
+      if (height > 0) inner.style.setProperty('--lightbox-image-height', `${height}px`);
+    }
+
     function openLightbox(data, isAi) {
-      document.getElementById('lightbox-img').src = data.image;
+      const img = document.getElementById('lightbox-img');
+      img.onload = syncLightboxPanelHeight;
+      img.src = data.image;
       const sidebar = document.getElementById('lightbox-sidebar');
       const sidebarMobile = document.getElementById('lightbox-sidebar-mobile');
       const inner = document.getElementById('lightbox-inner');
 
       if (isAi) {
+        document.getElementById('lightbox').classList.add('ai-lightbox');
         const promptText = data.prompt || t('noPrompt');
         const tags = buildDetailTags(data);
         document.getElementById('lightbox-prompt').textContent = promptText;
@@ -2134,6 +2830,7 @@
         inner.classList.remove('max-w-5xl');
         inner.classList.add('max-w-6xl');
       } else {
+        document.getElementById('lightbox').classList.remove('ai-lightbox');
         sidebar.classList.add('hidden');
         sidebar.classList.remove('md:flex');
         sidebarMobile.classList.add('hidden');
@@ -2150,8 +2847,9 @@
       const lb = document.getElementById('lightbox');
       lb.classList.remove('hidden');
       lb.classList.add('flex');
+      requestAnimationFrame(syncLightboxPanelHeight);
     }
-    function closeLightbox(){const lb=document.getElementById('lightbox');lb.classList.add('hidden');lb.classList.remove('flex');}
+    function closeLightbox(){const lb=document.getElementById('lightbox');lb.classList.add('hidden');lb.classList.remove('flex');lb.classList.remove('ai-lightbox');document.getElementById('lightbox-inner').style.removeProperty('--lightbox-image-height');}
     document.getElementById('lightbox-close').addEventListener('click',closeLightbox);
     document.getElementById('lightbox').addEventListener('click',(e)=>{if(e.target.id==='lightbox')closeLightbox();});
 
@@ -2196,7 +2894,7 @@
 
     function showContextMenuAt(x, y, target) {
       contextTarget = { type: target.dataset.itemType, id: target.dataset.itemId };
-      const canEdit = hasSupabaseSession() && ['kol', 'ai', 'creative'].includes(contextTarget.type);
+      const canEdit = ['kol', 'web', 'ai', 'creative'].includes(contextTarget.type);
       contextEditBtn.classList.toggle('hidden', !canEdit);
       contextMenu.classList.remove('hidden');
       const menuWidth = 152;
@@ -2239,6 +2937,7 @@
       hideContextMenu();
       if (!requireAuth()) return;
       if (type === 'kol') editKol(id);
+      else if (type === 'web') editGalleryItem('inspiration', id);
       else if (type === 'ai' || type === 'creative') editGalleryItem(type, id);
     });
 
@@ -2256,13 +2955,14 @@
     function populateGalleryCategories(type) {
       const categorySelect = document.getElementById('gallery-category-select');
       const categoryInput = document.getElementById('gallery-category-input');
+      const categoryField = document.getElementById('gallery-category-field');
       const isAi = type === 'ai';
+      const isWeb = type === 'inspiration';
+      const isCreative = type === 'creative';
+      categoryField.classList.toggle('hidden', isWeb || isAi || isCreative);
       categorySelect.classList.toggle('hidden', isAi);
       categoryInput.classList.toggle('hidden', !isAi);
-      if (isAi) {
-        populateAiCategoryDatalist();
-        return;
-      }
+      if (isAi || isCreative) return;
       const categories = type === 'creative' ? CREATIVE_CATEGORIES : CATEGORIES;
       const labelFn = type === 'creative' ? tCreativeCat : tCat;
       categorySelect.innerHTML = '';
@@ -2274,8 +2974,119 @@
       });
     }
 
+    function renderWebUploadFields() {
+      const wrap = document.getElementById('gallery-web-filter-fields');
+      wrap.innerHTML = WEB_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-web-upload-group="${esc(group.key)}">
+        <label>${esc(uiLabel(group.label))}
+          <div class="web-upload-select-wrap mt-1.5">
+            <select name="web_${esc(group.key)}" class="web-upload-select">
+              <option value="">${esc(t('selectPlaceholder'))}</option>
+              ${getWebFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
+            </select>
+            <div class="web-option-manager is-collapsed">
+              <input type="text" class="web-option-input" placeholder="${esc(t('addOptionPrompt'))}" />
+              <button type="button" class="web-option-add" aria-label="添加细项">+</button>
+              <button type="button" class="web-option-remove" aria-label="删除选中细项">−</button>
+            </div>
+          </div>
+        </label>
+      </div>`).join('');
+      wrap.querySelectorAll('[data-web-upload-group]').forEach((field) => {
+        const groupKey = field.dataset.webUploadGroup;
+        const input = field.querySelector('.web-option-input');
+        const select = field.querySelector('select');
+        field.querySelector('.web-option-add')?.addEventListener('click', () => {
+          const value = prompt(t('addOptionPrompt'));
+          if (!value) return;
+          addWebFilterOption(groupKey, value);
+          renderWebUploadFields();
+          renderWebFilters();
+        });
+        input?.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          addWebFilterOption(groupKey, input.value);
+          renderWebUploadFields();
+          renderWebFilters();
+        });
+        field.querySelector('.web-option-remove')?.addEventListener('click', () => {
+          Array.from(select.selectedOptions || []).forEach((option) => {
+            if (isCustomWebFilterOption(groupKey, option.value)) removeWebFilterOption(groupKey, option.value);
+          });
+          renderWebUploadFields();
+          renderWebFilters();
+          renderInspiration();
+        });
+      });
+    }
+
+    function collectWebTags(f) {
+      const tags = {};
+      WEB_FILTER_GROUPS.forEach((group) => {
+        const select = f[`web_${group.key}`];
+        const values = Array.from(select?.selectedOptions || []).map((option) => option.value.trim()).filter(Boolean);
+        if (values.length) tags[group.key] = values;
+      });
+      return tags;
+    }
+
+    function renderAiUploadFields() {
+      const wrap = document.getElementById('gallery-ai-filter-fields');
+      wrap.innerHTML = AI_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-ai-upload-group="${esc(group.key)}">
+        <label>${esc(uiLabel(group.label))}
+          <div class="web-upload-select-wrap mt-1.5">
+            <select name="ai_${esc(group.key)}" class="web-upload-select">
+              <option value="">${esc(t('selectPlaceholder'))}</option>
+              ${getAiFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
+            </select>
+            <button type="button" class="web-select-action web-select-add" aria-label="添加细项">+</button>
+            <button type="button" class="web-select-action web-select-remove" aria-label="删除选中细项">−</button>
+          </div>
+        </label>
+      </div>`).join('');
+      wrap.querySelectorAll('[data-ai-upload-group]').forEach((field) => {
+        const groupKey = field.dataset.aiUploadGroup;
+        const select = field.querySelector('select');
+        field.querySelector('.web-select-add')?.addEventListener('click', () => {
+          const value = prompt(t('addOptionPrompt'));
+          if (!value) return;
+          addAiFilterOption(groupKey, value);
+          renderAiUploadFields();
+          renderAiFilters();
+        });
+        field.querySelector('.web-select-remove')?.addEventListener('click', () => {
+          const value = select.value;
+          if (!value) return;
+          removeAiFilterOption(groupKey, value);
+          renderAiUploadFields();
+          renderAiFilters();
+          renderAi();
+        });
+      });
+    }
+
+    function collectAiTags(f) {
+      const tags = {};
+      AI_FILTER_GROUPS.forEach((group) => {
+        const value = (f[`ai_${group.key}`]?.value || '').trim();
+        if (value) tags[group.key] = [value];
+      });
+      return tags;
+    }
+
+    function renderCreativeUploadFields() {
+      const f = document.getElementById('form-gallery');
+      const region = f?.creativeRegion;
+      const detail = f?.creativeDetail;
+      if (!region || !detail) return;
+      region.innerHTML = `<option value="">${esc(t('selectPlaceholder'))}</option>${CREATIVE_REGIONS.map((item) => `<option value="${esc(item)}">${esc(uiLabel(item))}</option>`).join('')}`;
+      detail.innerHTML = `<option value="">${esc(t('selectPlaceholder'))}</option>${CREATIVE_DETAIL_OPTIONS.map((item) => `<option value="${esc(item)}">${esc(uiLabel(item))}</option>`).join('')}`;
+    }
+
     function getGalleryCategoryValue(f, type) {
-      if (type === 'ai') return (f.categoryInput?.value || '').trim();
+      if (type === 'inspiration') return collectWebTags(f).useCase || '网图';
+      if (type === 'ai') return Object.values(collectAiTags(f)).flat()[0] || 'AI Image';
+      if (type === 'creative') return f.creativeRegion?.value || '';
       return f.category.value;
     }
 
@@ -2284,10 +3095,20 @@
       document.getElementById('gallery-id').value = '';
       const titles = { inspiration: t('addWeb'), creative: t('addCreative'), ai: t('addAi') };
       document.getElementById('modal-gallery-title').textContent = titles[type] || t('addWeb');
-      document.getElementById('gallery-tags-field').classList.toggle('hidden', type !== 'ai');
-      document.getElementById('gallery-web-tags-field').classList.toggle('hidden', type === 'ai');
+      document.getElementById('gallery-tags-field').classList.add('hidden');
+      document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
+      document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
+      document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
+      document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
+      document.getElementById('gallery-style-label').textContent = type === 'ai' ? t('effectPromptLabel') : t('descPromptLabel');
+      renderWebUploadFields();
+      renderAiUploadFields();
+      renderCreativeUploadFields();
       populateGalleryCategories(type);
       document.getElementById('form-gallery').reset();
+      const galleryFileInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
+      if (galleryFileInput) galleryFileInput.multiple = type === 'inspiration';
       document.getElementById('gallery-type').value = type;
       clearDropZone('gallery-image-data');
       openModal('modal-gallery');
@@ -2300,8 +3121,9 @@
       document.getElementById('gallery-id').value = id;
       const titles = { creative: t('editCreative'), ai: t('editAi') };
       document.getElementById('modal-gallery-title').textContent = titles[type] || t('edit');
-      document.getElementById('gallery-tags-field').classList.toggle('hidden', type !== 'ai');
-      document.getElementById('gallery-web-tags-field').classList.toggle('hidden', type === 'ai');
+      document.getElementById('gallery-tags-field').classList.add('hidden');
+      document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
+      document.getElementById('gallery-style-label').textContent = type === 'ai' ? '效果Prompt' : '描述 / Prompt';
       populateGalleryCategories(type);
       const f = document.getElementById('form-gallery');
       pendingFiles['gallery-image-data'] = null;
@@ -2316,9 +3138,9 @@
       setDropZoneImage('gallery-image-data', item.image || '');
       openModal('modal-gallery');
     }
-    document.getElementById('btn-add-inspiration').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('inspiration'); });
-    document.getElementById('btn-add-creative').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('creative'); });
-    document.getElementById('btn-add-ai').addEventListener('click',()=>{ if (requireAuth()) openGalleryModal('ai'); });
+    document.getElementById('btn-add-inspiration').addEventListener('click',()=>{ openGalleryModal('inspiration'); });
+    document.getElementById('btn-add-creative').addEventListener('click',()=>{ openGalleryModal('creative'); });
+    document.getElementById('btn-add-ai').addEventListener('click',()=>{ openGalleryModal('ai'); });
 
     document.getElementById('form-gallery').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2328,25 +3150,36 @@
       const editId = document.getElementById('gallery-id').value.trim();
       const postCategory = POST_CATEGORIES[type];
       const existingItem = editId ? findItemWithStorage(type, editId) : null;
-      const file = pendingFiles['gallery-image-data'];
+      const galleryInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
+      const rawSelectedFiles = type === 'inspiration' ? Array.from(galleryInput?.files || []) : [];
+      const batchFiles = type === 'inspiration'
+        ? ((pendingFileLists['gallery-image-data'] || []).map((item) => item.file).filter(Boolean).length
+          ? (pendingFileLists['gallery-image-data'] || []).map((item) => item.file).filter(Boolean)
+          : rawSelectedFiles)
+        : [];
+      const file = type === 'inspiration' ? batchFiles[0] : pendingFiles['gallery-image-data'];
       if (!file && !existingItem?.image) { alert(t('imageRequired')); return; }
       if (file && !assertUploadFileSize(file)) return;
       const categoryVal = getGalleryCategoryValue(f, type);
       if (!categoryVal) { alert(appMeta.lang === 'en' ? 'Category is required.' : '请填写类型。'); return; }
-      const styleVal = f.style.value.trim() || '未标注';
-      if (type === 'ai') registerCustomAiCategory(categoryVal);
+      const webStructuredTags = type === 'inspiration' ? collectWebTags(f) : {};
+      const aiStructuredTags = type === 'ai' ? collectAiTags(f) : {};
+      const styleVal = type === 'inspiration'
+        ? Object.values(webStructuredTags).flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean).join(' / ') || '网图'
+        : f.style.value.trim() || Object.values(aiStructuredTags).flat().join(' / ') || '未标注';
       const submitBtn = f.querySelector('button[type="submit"]');
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
-        let imageUrl;
-        let storagePath;
-        if (file) {
-          ({ imageUrl, storagePath } = await uploadImageToStorage(file, postCategory));
+        const filesToSave = type === 'inspiration' && batchFiles.length ? batchFiles : [file].filter(Boolean);
+        const uploadedImages = [];
+        if (filesToSave.length) {
+          for (const imageFile of filesToSave) {
+            uploadedImages.push(await uploadOrUseLocalImage(imageFile, postCategory));
+          }
           if (existingItem?.storagePath) await deleteStorageFile(existingItem.storagePath);
         } else {
-          imageUrl = existingItem.image;
-          storagePath = existingItem.storagePath || '';
+          uploadedImages.push({ imageUrl: existingItem.image, storagePath: existingItem.storagePath || '' });
         }
         const metadata = {
           subcategory: categoryVal,
@@ -2354,27 +3187,33 @@
         };
         if (type === 'ai') {
           metadata.prompt = styleVal;
-          const manualTags = parseTagsFromString(f.tags?.value);
-          metadata.tags = manualTags.length ? manualTags : buildAiTags(styleVal, categoryVal);
+          metadata.aiTags = aiStructuredTags;
+          const manualSearchTags = parseTagsFromString(f.searchTags?.value);
+          metadata.tags = buildAiTags(styleVal, categoryVal);
+          metadata.searchTags = manualSearchTags.length ? manualSearchTags : buildAiSearchTags({ category: categoryVal, style: styleVal, prompt: styleVal, aiTags: aiStructuredTags, tags: metadata.tags });
+        } else if (type === 'inspiration') {
+          metadata.webTags = webStructuredTags;
+          const manualTags = parseTagsFromString(f.searchTags?.value);
+          metadata.searchTags = manualTags.length ? manualTags : buildInspirationSearchTags({ category: categoryVal, style: styleVal, webTags: webStructuredTags });
         } else {
           const webTags = parseTagsFromString(f.searchTags?.value);
-          metadata.searchTags = webTags.length ? webTags : (type === 'creative'
-            ? buildCreativeSearchTags({ category: categoryVal, style: styleVal })
-            : buildInspirationSearchTags({ category: categoryVal, style: styleVal }));
+          metadata.searchTags = webTags.length ? webTags : buildCreativeSearchTags({ category: categoryVal, style: styleVal });
         }
-        const payload = {
-          title: styleVal,
-          fans: null,
-          imageUrl,
-          storagePath,
-          metadata,
-        };
-        if (editId) {
-          await updatePost({ id: editId, ...payload });
-        } else {
-          await insertPost({ category: postCategory, ...payload });
+        for (const uploaded of uploadedImages) {
+          const payload = {
+            title: styleVal,
+            fans: null,
+            imageUrl: uploaded.imageUrl,
+            storagePath: uploaded.storagePath,
+            metadata,
+          };
+          await savePost({
+            id: editId || null,
+            category: postCategory,
+            ...payload,
+          });
         }
-        await fetchAllPosts();
+        if (SUPABASE_READY) await fetchAllPosts();
         renderByCategory(postCategory);
         closeModal('modal-gallery');
         clearDropZone('gallery-image-data');
