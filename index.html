@@ -3038,8 +3038,7 @@
       wrap.innerHTML = AI_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-ai-upload-group="${esc(group.key)}">
         <label>${esc(uiLabel(group.label))}
           <div class="web-upload-select-wrap mt-1.5">
-            <select name="ai_${esc(group.key)}" class="web-upload-select">
-              <option value="">${esc(t('selectPlaceholder'))}</option>
+            <select name="ai_${esc(group.key)}" class="web-upload-select" multiple size="1" title="${esc(t('selectPlaceholder'))}">
               ${getAiFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
             </select>
             <button type="button" class="web-select-action web-select-add" aria-label="添加细项">+</button>
@@ -3071,8 +3070,9 @@
     function collectAiTags(f) {
       const tags = {};
       AI_FILTER_GROUPS.forEach((group) => {
-        const value = (f[`ai_${group.key}`]?.value || '').trim();
-        if (value) tags[group.key] = [value];
+        const select = f[`ai_${group.key}`];
+        const values = Array.from(select?.selectedOptions || []).map((option) => option.value.trim()).filter(Boolean);
+        if (values.length) tags[group.key] = values;
       });
       return tags;
     }
@@ -3125,8 +3125,15 @@
       const titles = { creative: t('editCreative'), ai: t('editAi') };
       document.getElementById('modal-gallery-title').textContent = titles[type] || t('edit');
       document.getElementById('gallery-tags-field').classList.add('hidden');
+      document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
+      document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
+      document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
-      document.getElementById('gallery-style-label').textContent = type === 'ai' ? '效果Prompt' : '描述 / Prompt';
+      document.getElementById('gallery-style-label').textContent = type === 'ai' ? t('effectPromptLabel') : t('descPromptLabel');
+      renderWebUploadFields();
+      renderAiUploadFields();
+      renderCreativeUploadFields();
       populateGalleryCategories(type);
       const f = document.getElementById('form-gallery');
       pendingFiles['gallery-image-data'] = null;
