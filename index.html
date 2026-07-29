@@ -2706,7 +2706,8 @@
       const f = e.target;
       const editId = document.getElementById('kol-id').value.trim();
       const existingKol = editId ? state.kols.find((k) => k.id === editId) : null;
-      const file = pendingFiles['kol-image-data'];
+      const kolFiles = (pendingFileLists['kol-image-data'] || []).map((item) => item.file).filter(Boolean);
+      const file = kolFiles[0] || pendingFiles['kol-image-data'];
       const submitBtn = f.querySelector('button[type="submit"]');
       const prevLabel = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
@@ -3156,7 +3157,7 @@
       populateGalleryCategories(type);
       document.getElementById('form-gallery').reset();
       const galleryFileInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
-      if (galleryFileInput) galleryFileInput.multiple = false;
+      if (galleryFileInput) galleryFileInput.multiple = true;
       document.getElementById('gallery-type').value = type;
       clearDropZone('gallery-image-data');
       openModal('modal-gallery');
