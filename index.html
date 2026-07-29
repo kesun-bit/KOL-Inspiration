@@ -1799,19 +1799,47 @@
       populateAiCategoryDatalist();
     }
 
+    function withCacheBust(url) {
+      if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${Date.now()}`;
+    }
+
+    function verifyImageUrl(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const timer = setTimeout(() => {
+          img.onload = null;
+          img.onerror = null;
+          reject(new Error('image verify timeout'));
+        }, 12000);
+        img.onload = () => {
+          clearTimeout(timer);
+          resolve(true);
+        };
+        img.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error('image verify failed'));
+        };
+        img.src = withCacheBust(url);
+      });
+    }
+
     async function uploadImageToStorage(file, category = 'uploads') {
       const { data: { user } } = await SUPABASE.auth.getUser();
       const uploaderId = user?.id || 'guest';
       const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/gi, '') || 'jpg';
       const filePath = `${category}/${uploaderId}/${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await SUPABASE.storage.from(SUPABASE_BUCKET).upload(filePath, file, {
-        cacheControl: '3600',
+        cacheControl: 'no-cache',
         upsert: false,
         contentType: file.type || 'image/jpeg',
       });
       if (uploadError) throw uploadError;
       const { data } = SUPABASE.storage.from(SUPABASE_BUCKET).getPublicUrl(filePath);
-      return { imageUrl: data.publicUrl, storagePath: filePath, provider: 'supabase' };
+      const publicUrl = withCacheBust(data.publicUrl);
+      await verifyImageUrl(publicUrl);
+      return { imageUrl: publicUrl, storagePath: filePath, provider: 'supabase' };
     }
 
     function fileToDataUrl(file) {
@@ -1828,7 +1856,8 @@
         try {
           return await uploadImageToStorage(file, category);
         } catch (err) {
-          console.warn('remote image upload failed; using local data url', err);
+          console.error('remote image upload failed', err);
+          throw new Error(appMeta.lang === 'en' ? 'Image upload failed. Please try again.' : '图片上传失败，请重试。');
         }
       }
       return { imageUrl: await fileToDataUrl(file), storagePath: '', provider: 'local' };
@@ -1983,11 +2012,7 @@
     function optimizedImageUrl(url, width = 640) {
       if (!url || typeof url !== 'string') return url || '';
       const u = url.trim();
-      if (u.includes('/storage/v1/object/public/')) {
-        const base = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-        const sep = base.includes('?') ? '&' : '?';
-        return `${base}${sep}width=${width}&quality=75&resize=contain`;
-      }
+      if (u.includes('/storage/v1/object/public/')) return u;
       return u;
     }
 
@@ -2016,7 +2041,7 @@
     }
 
     const MAX_IMAGE_BYTES = 200 * 1024;
-    const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80';
+    const DEFAULT_FALLBACK_IMAGE = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20500%22%3E%3Crect%20width%3D%22400%22%20height%3D%22500%22%20fill%3D%22%23efefee%22/%3E%3Cpath%20d%3D%22M150%20220h100v70H150z%22%20fill%3D%22none%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%2210%22%20rx%3D%2212%22/%3E%3Ccircle%20cx%3D%22178%22%20cy%3D%22245%22%20r%3D%2212%22%20fill%3D%22%23aaa%22/%3E%3Cpath%20d%3D%22M158%20282l38-36%2024%2024%2017-17%2031%2029%22%20fill%3D%22none%22%20stroke%3D%22%23aaa%22%20stroke-width%3D%228%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Ctext%20x%3D%22200%22%20y%3D%22325%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2222%22%20fill%3D%22%23999%22%3EImage%20unavailable%3C/text%3E%3C/svg%3E';
 
     function getDropZone(inputId) {
       return document.querySelector(`.drop-zone[data-drop-input="${inputId}"]`);
