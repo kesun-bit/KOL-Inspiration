@@ -453,6 +453,20 @@
       color: #4b4b4b;
       pointer-events: none;
     }
+    .web-upload-select-label {
+      position: absolute;
+      left: 14px;
+      right: 82px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #3f3f3f;
+      font-size: 14px;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .web-upload-select.is-multi-count { color: transparent; }
     .web-option-manager {
       position: absolute;
       right: 34px;
@@ -1260,7 +1274,7 @@
     };
     const UI_LABELS_EN = {
       '全部': 'All', '推荐用途': 'Use case', '性别': 'Gender', '年龄': 'Age', '人数': 'People', '族裔': 'Ethnicity', '人像占比': 'Shot size', '光影质感': 'Lighting', '情绪': 'Mood',
-      '影像编辑': 'Video Edit', '品牌设计': 'Brand Design', '人像编辑': 'Portrait Edit', '图片编辑': 'Image Edit', '身材美型': 'Body Shape', '头发': 'Hair', '发型': 'Hair', '女': 'Female', '男': 'Male', '其他': 'Other',
+      '影像编辑': 'Image Editing', '品牌设计': 'branding', '人像编辑': 'Portrait Edit', '图片编辑': 'Image Edit', '身材美型': 'Body Shape', '头发': 'Hair', '发型': 'Hair', '女': 'Female', '男': 'Male', '其他': 'Other',
       '单人': 'Solo', '情侣': 'Couple', '好友': 'Friends', '家庭': 'Family', '白人': 'White', '黑人': 'Black', '拉丁裔': 'Latino', '中东裔': 'Middle Eastern', '混血': 'Mixed',
       '特写': 'Close-up', '中景': 'Medium', '全景': 'Full shot', '远景': 'Long shot', '阳光晴朗': 'Sunny', '清晨': 'Morning', '夜景': 'Night', '夕阳': 'Sunset', '高级棚拍': 'Studio',
       '露齿大笑': 'Big smile', '高级冷酷脸': 'Cool face', '自信气场': 'Confident', '搞怪多巴胺': 'Playful', '松弛': 'Relaxed',
@@ -3090,10 +3104,11 @@
       wrap.innerHTML = WEB_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-web-upload-group="${esc(group.key)}">
         <label>${esc(uiLabel(group.label))}
           <div class="web-upload-select-wrap mt-1.5">
-            <select name="web_${esc(group.key)}" class="web-upload-select" ${group.key === 'useCase' ? `multiple size="1" title="${esc(t('selectPlaceholder'))}"` : ''}>
+            <select name="web_${esc(group.key)}" class="web-upload-select ${group.key === 'useCase' ? 'is-multi-count' : ''}" ${group.key === 'useCase' ? `multiple size="1" title="${esc(t('selectPlaceholder'))}"` : ''}>
               ${group.key === 'useCase' ? '' : `<option value="">${esc(t('selectPlaceholder'))}</option>`}
               ${getWebFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
             </select>
+            ${group.key === 'useCase' ? `<span class="web-upload-select-label">${esc(uploadSelectCountText(0))}</span>` : ''}
             <div class="web-option-manager is-collapsed">
               <input type="text" class="web-option-input" placeholder="${esc(t('addOptionPrompt'))}" />
               <button type="button" class="web-option-add" aria-label="添加细项">+</button>
@@ -3106,6 +3121,8 @@
         const groupKey = field.dataset.webUploadGroup;
         const input = field.querySelector('.web-option-input');
         const select = field.querySelector('select');
+        updateUploadSelectCount(select);
+        select?.addEventListener('change', () => updateUploadSelectCount(select));
         field.querySelector('.web-option-add')?.addEventListener('click', () => {
           const value = prompt(t('addOptionPrompt'));
           if (!value) return;
@@ -3141,14 +3158,26 @@
       return tags;
     }
 
+    function uploadSelectCountText(count) {
+      return appMeta.lang === 'en' ? `Selected ${count}` : `选择了 ${count} 项`;
+    }
+
+    function updateUploadSelectCount(select) {
+      if (!select?.multiple) return;
+      const label = select.parentElement?.querySelector('.web-upload-select-label');
+      if (!label) return;
+      label.textContent = uploadSelectCountText(select.selectedOptions?.length || 0);
+    }
+
     function renderAiUploadFields() {
       const wrap = document.getElementById('gallery-ai-filter-fields');
       wrap.innerHTML = AI_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-ai-upload-group="${esc(group.key)}">
         <label>${esc(uiLabel(group.label))}
           <div class="web-upload-select-wrap mt-1.5">
-            <select name="ai_${esc(group.key)}" class="web-upload-select" multiple size="1" title="${esc(t('selectPlaceholder'))}">
+            <select name="ai_${esc(group.key)}" class="web-upload-select is-multi-count" multiple size="1" title="${esc(t('selectPlaceholder'))}">
               ${getAiFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
             </select>
+            <span class="web-upload-select-label">${esc(uploadSelectCountText(0))}</span>
             <button type="button" class="web-select-action web-select-add" aria-label="添加细项">+</button>
             <button type="button" class="web-select-action web-select-remove" aria-label="删除选中细项">−</button>
           </div>
@@ -3157,6 +3186,8 @@
       wrap.querySelectorAll('[data-ai-upload-group]').forEach((field) => {
         const groupKey = field.dataset.aiUploadGroup;
         const select = field.querySelector('select');
+        updateUploadSelectCount(select);
+        select?.addEventListener('change', () => updateUploadSelectCount(select));
         field.querySelector('.web-select-add')?.addEventListener('click', () => {
           const value = prompt(t('addOptionPrompt'));
           if (!value) return;
