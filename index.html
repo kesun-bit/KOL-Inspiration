@@ -707,6 +707,11 @@
     .batch-preview-title { font-size: 13px; font-weight: 700; color: #242424; }
     .batch-preview-subtitle { margin-top: 2px; font-size: 11px; color: #7b7770; }
     .batch-count-badge { height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; background: #1f1f1f; color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 8px 18px rgba(0,0,0,.18); }
+    .before-after-lightbox-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; align-items: start; }
+    .before-after-lightbox-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .before-after-lightbox-label { align-self: flex-start; padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.78); color: #2f2f2f; font-size: 12px; font-weight: 700; box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+    .before-after-lightbox-card img { width: 100%; max-height: 82vh; object-fit: contain; border-radius: 18px; box-shadow: 0 18px 56px rgba(0,0,0,.14); }
+    @media (max-width: 767px) { .before-after-lightbox-grid { grid-template-columns: 1fr; } }
     .batch-thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .batch-thumb { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #dedbd5; box-shadow: inset 0 0 0 1px rgba(255,255,255,.55); }
     .batch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -969,6 +974,34 @@
           <datalist id="ai-category-datalist"></datalist></label>
         <div id="gallery-web-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
         <div id="gallery-ai-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
+        <div id="gallery-ai-before-after-fields" class="grid grid-cols-2 gap-3 hidden">
+          <div class="block text-sm">
+            <span>Before</span>
+            <input type="hidden" name="beforeImage" id="gallery-before-image-data" />
+            <div class="drop-zone mt-1.5" data-drop-input="gallery-before-image-data" role="button" tabindex="0">
+              <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+              <div class="drop-zone-empty">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+                <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+              </div>
+              <img class="drop-zone-preview" alt="" />
+              <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+            </div>
+          </div>
+          <div class="block text-sm">
+            <span>After</span>
+            <input type="hidden" name="afterImage" id="gallery-after-image-data" />
+            <div class="drop-zone mt-1.5" data-drop-input="gallery-after-image-data" role="button" tabindex="0">
+              <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+              <div class="drop-zone-empty">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+                <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+              </div>
+              <img class="drop-zone-preview" alt="" />
+              <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+            </div>
+          </div>
+        </div>
         <div id="gallery-creative-fields" class="grid grid-cols-2 gap-3 hidden">
           <label class="block text-sm"><span data-i18n="regionLabel">地区</span>
             <select name="creativeRegion" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
@@ -1229,8 +1262,8 @@
     let authSession = null;
     // DB-backed; keep legacy helpers below for one-time seeding only.
     let postsStore = [];
-    const pendingFiles = { 'kol-image-data': null, 'gallery-image-data': null };
-    const pendingFileLists = { 'gallery-image-data': [] };
+    const pendingFiles = { 'kol-image-data': null, 'gallery-image-data': null, 'gallery-before-image-data': null, 'gallery-after-image-data': null };
+    const pendingFileLists = { 'gallery-image-data': [], 'gallery-before-image-data': [], 'gallery-after-image-data': [] };
 
     const UNSPLASH_IMAGES = [
       { id: 'u1', image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&q=80', category: '美颜类', style: '清透自然' },
@@ -1657,7 +1690,12 @@
       const m = row.metadata || {};
       const item = {
         id: row.id,
-        image: row.image_url,
+        image: row.category === 'ai_model' ? (m.afterImage || m.beforeImage || row.image_url) : row.image_url,
+        mainImage: row.image_url,
+        beforeImage: m.beforeImage || '',
+        afterImage: m.afterImage || '',
+        beforeStoragePath: m.beforeStoragePath || '',
+        afterStoragePath: m.afterStoragePath || '',
         category: m.subcategory || m.category || '美颜类',
         creativeRegion: m.creativeRegion || (CREATIVE_REGIONS.includes(m.subcategory || m.category) ? (m.subcategory || m.category) : ''),
         detailCategory: m.detailCategory || '',
@@ -2819,6 +2857,9 @@
       c.innerHTML=list.map((item)=>{
         const payload=JSON.stringify({
           image: item.image,
+          mainImage: item.mainImage || item.image,
+          beforeImage: item.beforeImage || '',
+          afterImage: item.afterImage || '',
           category: item.category,
           prompt: item.prompt || item.style || '',
           tags: item.tags || buildDetailTags(item),
@@ -2849,16 +2890,22 @@
     }
 
     function syncLightboxPanelHeight() {
-      const img = document.getElementById('lightbox-img');
       const inner = document.getElementById('lightbox-inner');
-      const height = Math.round(img.getBoundingClientRect().height);
+      const target = document.getElementById('lightbox-img') || document.querySelector('#lightbox-image-wrap img');
+      if (!target || !inner) return;
+      const height = Math.round(target.getBoundingClientRect().height);
       if (height > 0) inner.style.setProperty('--lightbox-image-height', `${height}px`);
     }
 
     function openLightbox(data, isAi) {
-      const img = document.getElementById('lightbox-img');
-      img.onload = syncLightboxPanelHeight;
-      img.src = data.image;
+      const imageWrap = document.getElementById('lightbox-image-wrap');
+      const hasCompare = isAi && (data.beforeImage || data.afterImage);
+      imageWrap.innerHTML = hasCompare
+        ? `<div class="before-after-lightbox-grid">
+            ${data.beforeImage ? `<div class="before-after-lightbox-card"><span class="before-after-lightbox-label">Before</span><img src="${esc(data.beforeImage)}" alt="Before" onload="syncLightboxPanelHeight()" /></div>` : ''}
+            ${data.afterImage ? `<div class="before-after-lightbox-card"><span class="before-after-lightbox-label">After</span><img src="${esc(data.afterImage)}" alt="After" onload="syncLightboxPanelHeight()" /></div>` : ''}
+          </div>`
+        : `<img id="lightbox-img" src="${esc(data.image)}" alt="" class="max-h-[85vh] w-full object-contain" onload="syncLightboxPanelHeight()" />`;
       const sidebar = document.getElementById('lightbox-sidebar');
       const sidebarMobile = document.getElementById('lightbox-sidebar-mobile');
       const inner = document.getElementById('lightbox-inner');
@@ -3148,6 +3195,7 @@
       document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
       document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
       document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', type !== 'ai');
       document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
       document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-style-label').textContent = type === 'ai' ? t('effectPromptLabel') : t('descPromptLabel');
@@ -3160,6 +3208,8 @@
       if (galleryFileInput) galleryFileInput.multiple = true;
       document.getElementById('gallery-type').value = type;
       clearDropZone('gallery-image-data');
+      clearDropZone('gallery-before-image-data');
+      clearDropZone('gallery-after-image-data');
       openModal('modal-gallery');
     }
 
@@ -3173,6 +3223,7 @@
       document.getElementById('gallery-tags-field').classList.add('hidden');
       document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
       document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', type !== 'ai');
       document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
       document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
@@ -3183,6 +3234,8 @@
       populateGalleryCategories(type);
       const f = document.getElementById('form-gallery');
       pendingFiles['gallery-image-data'] = null;
+      pendingFiles['gallery-before-image-data'] = null;
+      pendingFiles['gallery-after-image-data'] = null;
       f.categoryInput.value = item.category;
       f.category.value = item.category;
       f.style.value = item.style || '';
@@ -3191,7 +3244,14 @@
       } else {
         f.searchTags.value = (item.searchTags || []).join(', ');
       }
-      setDropZoneImage('gallery-image-data', item.image || '');
+      setDropZoneImage('gallery-image-data', item.mainImage || item.image || '');
+      if (type === 'ai') {
+        setDropZoneImage('gallery-before-image-data', item.beforeImage || '');
+        setDropZoneImage('gallery-after-image-data', item.afterImage || '');
+      } else {
+        clearDropZone('gallery-before-image-data');
+        clearDropZone('gallery-after-image-data');
+      }
       openModal('modal-gallery');
     }
     document.getElementById('btn-add-inspiration').addEventListener('click',()=>{ if (!requireAuth()) return; openGalleryModal('inspiration'); });
@@ -3207,8 +3267,12 @@
       const postCategory = POST_CATEGORIES[type];
       const existingItem = editId ? findItemWithStorage(type, editId) : null;
       const file = pendingFiles['gallery-image-data'];
-      if (!file && !existingItem?.image) { alert(t('imageRequired')); return; }
+      const beforeFile = type === 'ai' ? pendingFiles['gallery-before-image-data'] : null;
+      const afterFile = type === 'ai' ? pendingFiles['gallery-after-image-data'] : null;
+      if (!file && !beforeFile && !afterFile && !existingItem?.image) { alert(t('imageRequired')); return; }
       if (file && !assertUploadFileSize(file)) return;
+      if (beforeFile && !assertUploadFileSize(beforeFile)) return;
+      if (afterFile && !assertUploadFileSize(afterFile)) return;
       const categoryVal = getGalleryCategoryValue(f, type);
       if (!categoryVal) { alert(appMeta.lang === 'en' ? 'Category is required.' : '请填写类型。'); return; }
       const webStructuredTags = type === 'inspiration' ? collectWebTags(f) : {};
@@ -3221,19 +3285,39 @@
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('saving'); }
       try {
         const uploadedImages = [];
+        let beforeUpload = null;
+        let afterUpload = null;
         if (file) {
           uploadedImages.push(await uploadOrUseLocalImage(file, postCategory));
           if (existingItem?.storagePath) await deleteStorageFile(existingItem.storagePath);
+        } else if (type === 'ai' && (beforeFile || afterFile) && !existingItem?.image) {
+          uploadedImages.push({ imageUrl: '', storagePath: '' });
         } else {
           uploadedImages.push({ imageUrl: existingItem.image, storagePath: existingItem.storagePath || '' });
+        }
+        if (type === 'ai' && beforeFile) {
+          beforeUpload = await uploadOrUseLocalImage(beforeFile, postCategory);
+          if (existingItem?.beforeStoragePath) await deleteStorageFile(existingItem.beforeStoragePath);
+        }
+        if (type === 'ai' && afterFile) {
+          afterUpload = await uploadOrUseLocalImage(afterFile, postCategory);
+          if (existingItem?.afterStoragePath) await deleteStorageFile(existingItem.afterStoragePath);
         }
         const metadata = {
           subcategory: categoryVal,
           style: styleVal,
         };
         if (type === 'ai') {
+          const beforeImage = beforeUpload?.imageUrl || existingItem?.beforeImage || '';
+          const afterImage = afterUpload?.imageUrl || existingItem?.afterImage || '';
+          const beforeStoragePath = beforeUpload?.storagePath || existingItem?.beforeStoragePath || '';
+          const afterStoragePath = afterUpload?.storagePath || existingItem?.afterStoragePath || '';
           metadata.prompt = styleVal;
           metadata.aiTags = aiStructuredTags;
+          metadata.beforeImage = beforeImage;
+          metadata.afterImage = afterImage;
+          metadata.beforeStoragePath = beforeStoragePath;
+          metadata.afterStoragePath = afterStoragePath;
           const manualSearchTags = parseTagsFromString(f.searchTags?.value);
           metadata.tags = buildAiTags(styleVal, categoryVal);
           metadata.searchTags = manualSearchTags.length ? manualSearchTags : buildAiSearchTags({ category: categoryVal, style: styleVal, prompt: styleVal, aiTags: aiStructuredTags, tags: metadata.tags });
@@ -3246,11 +3330,17 @@
           metadata.searchTags = webTags.length ? webTags : buildCreativeSearchTags({ category: categoryVal, style: styleVal });
         }
         for (const uploaded of uploadedImages) {
+          const displayImageUrl = type === 'ai'
+            ? (metadata.afterImage || metadata.beforeImage || uploaded.imageUrl)
+            : uploaded.imageUrl;
+          const displayStoragePath = type === 'ai'
+            ? (metadata.afterStoragePath || metadata.beforeStoragePath || uploaded.storagePath)
+            : uploaded.storagePath;
           const payload = {
             title: styleVal,
             fans: null,
-            imageUrl: uploaded.imageUrl,
-            storagePath: uploaded.storagePath,
+            imageUrl: displayImageUrl,
+            storagePath: displayStoragePath,
             metadata,
           };
           await savePost({
