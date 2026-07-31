@@ -3189,18 +3189,22 @@
 
     function renderAiUploadFields() {
       const wrap = document.getElementById('gallery-ai-filter-fields');
-      wrap.innerHTML = AI_FILTER_GROUPS.map((group) => `<div class="block text-sm" data-ai-upload-group="${esc(group.key)}">
-        <label>${esc(uiLabel(group.label))}
-          <div class="web-upload-select-wrap mt-1.5">
-            <select name="ai_${esc(group.key)}" class="web-upload-select is-multi-count" multiple size="1" title="${esc(t('selectPlaceholder'))}">
-              ${getAiFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
-            </select>
-            <span class="web-upload-select-label">${esc(uploadSelectCountText(0))}</span>
-            <button type="button" class="web-select-action web-select-add" aria-label="添加细项">+</button>
-            <button type="button" class="web-select-action web-select-remove" aria-label="删除选中细项">−</button>
-          </div>
-        </label>
-      </div>`).join('');
+      wrap.innerHTML = AI_FILTER_GROUPS.map((group) => {
+        const isMulti = group.key === 'useCase';
+        return `<div class="block text-sm" data-ai-upload-group="${esc(group.key)}">
+          <label>${esc(uiLabel(group.label))}
+            <div class="web-upload-select-wrap mt-1.5">
+              <select name="ai_${esc(group.key)}" class="web-upload-select ${isMulti ? 'is-multi-count' : ''}" ${isMulti ? `multiple size="1" title="${esc(t('selectPlaceholder'))}"` : ''}>
+                ${isMulti ? '' : `<option value="">${esc(t('selectPlaceholder'))}</option>`}
+                ${getAiFilterOptions(group).map((option) => `<option value="${esc(option)}">${esc(uiLabel(option))}</option>`).join('')}
+              </select>
+              ${isMulti ? `<span class="web-upload-select-label">${esc(uploadSelectCountText(0))}</span>` : ''}
+              <button type="button" class="web-select-action web-select-add" aria-label="添加细项">+</button>
+              <button type="button" class="web-select-action web-select-remove" aria-label="删除选中细项">−</button>
+            </div>
+          </label>
+        </div>`;
+      }).join('');
       wrap.querySelectorAll('[data-ai-upload-group]').forEach((field) => {
         const groupKey = field.dataset.aiUploadGroup;
         const select = field.querySelector('select');
