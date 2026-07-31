@@ -265,6 +265,7 @@
       border: 1px solid rgba(0,0,0,.06);
       box-shadow: 0 18px 56px rgba(0,0,0,.1);
       backdrop-filter: blur(18px);
+      height: var(--lightbox-image-height, auto) !important;
       max-height: var(--lightbox-image-height, 82vh) !important;
     }
     #lightbox.soft-lightbox #lightbox-sidebar p,
@@ -954,8 +955,16 @@
         <input type="hidden" id="gallery-type" />
         <input type="hidden" id="gallery-id" />
         <input type="hidden" name="image" id="gallery-image-data" />
-        <div class="block text-sm">
-          <span data-i18n="uploadImage">展示图</span>
+        <div id="gallery-main-image-field" class="block text-sm">
+          <div class="flex items-center justify-between gap-3">
+            <span data-i18n="uploadImage">展示图</span>
+            <label id="gallery-ai-compare-toggle" class="hidden items-center gap-2 text-xs text-ink/60 select-none">
+              <span>单图</span>
+              <input name="compareMode" type="checkbox" class="sr-only peer" />
+              <span class="relative w-10 h-6 rounded-full bg-line transition peer-checked:bg-deep after:content-[''] after:absolute after:top-1 after:left-1 after:w-4 after:h-4 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-4"></span>
+              <span>双图对比</span>
+            </label>
+          </div>
           <div class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
             <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
             <div class="drop-zone-empty">
@@ -1152,9 +1161,11 @@
     const KOL_ETHNICITY_BASE = ['白人', '地中海裔', '拉丁裔', '非裔', '中东裔', '混血及其他'];
     const AI_CATEGORIES_BASE = ['节日氛围', '图片编辑', '人像编辑', '身材美型', '头发', 'AI Image'];
     const AI_FILTER_GROUPS = [
+      { key: 'useCase', label: '推荐用途', options: ['影像编辑', '品牌设计'] },
       { key: 'holiday', label: '节日氛围', options: ['巴西狂欢节', '情人节', '圣帕特里克节', '复活节', '母亲节', '巴西Festa Junina', '毕业季', '万圣节', '感恩节', '黑五', '圣诞节', '新年'] },
       { key: 'imageEdit', label: '图片编辑', options: ['Relight', '消除笔', '画质增强', 'AI Replace', '滤镜', '扩图'] },
       { key: 'portraitEdit', label: '人像编辑', options: ['美妆', '面部重塑', '牙齿', '肌肤', '纹身', '表情'] },
+      { key: 'ethnicity', label: '族裔', options: ['白人', '黑人', '拉丁裔', '中东裔', '混血', '其他'] },
       { key: 'bodyShape', label: '身材美型', options: ['塑形', '增肌'] },
       { key: 'hair', label: '头发', options: ['发型', '发色', '头发细节'] },
       { key: 'aiImage', label: 'AI Image', options: ['姿态重塑', '拍立得'] },
@@ -1696,6 +1707,7 @@
         afterImage: m.afterImage || '',
         beforeStoragePath: m.beforeStoragePath || '',
         afterStoragePath: m.afterStoragePath || '',
+        displayMode: m.displayMode || ((m.beforeImage || m.afterImage) ? 'compare' : 'single'),
         category: m.subcategory || m.category || '美颜类',
         creativeRegion: m.creativeRegion || (CREATIVE_REGIONS.includes(m.subcategory || m.category) ? (m.subcategory || m.category) : ''),
         detailCategory: m.detailCategory || '',
@@ -2860,6 +2872,7 @@
           mainImage: item.mainImage || item.image,
           beforeImage: item.beforeImage || '',
           afterImage: item.afterImage || '',
+          displayMode: item.displayMode || '',
           category: item.category,
           prompt: item.prompt || item.style || '',
           tags: item.tags || buildDetailTags(item),
@@ -2899,7 +2912,7 @@
 
     function openLightbox(data, isAi) {
       const imageWrap = document.getElementById('lightbox-image-wrap');
-      const hasCompare = isAi && (data.beforeImage || data.afterImage);
+      const hasCompare = isAi && data.displayMode === 'compare' && (data.beforeImage || data.afterImage);
       imageWrap.innerHTML = hasCompare
         ? `<div class="before-after-lightbox-grid">
             ${data.beforeImage ? `<div class="before-after-lightbox-card"><span class="before-after-lightbox-label">Before</span><img src="${esc(data.beforeImage)}" alt="Before" onload="syncLightboxPanelHeight()" /></div>` : ''}
@@ -3186,6 +3199,17 @@
       return f.category.value;
     }
 
+    function updateAiCompareUploadMode() {
+      const f = document.getElementById('form-gallery');
+      const type = document.getElementById('gallery-type').value;
+      const isAi = type === 'ai';
+      const isCompare = !!f?.compareMode?.checked;
+      document.getElementById('gallery-ai-compare-toggle')?.classList.toggle('hidden', !isAi);
+      document.getElementById('gallery-ai-compare-toggle')?.classList.toggle('flex', isAi);
+      document.getElementById('gallery-main-image-field')?.classList.toggle('hidden', isAi && isCompare);
+      document.getElementById('gallery-ai-before-after-fields')?.classList.toggle('hidden', !isAi || !isCompare);
+    }
+
     function openGalleryModal(type) {
       document.getElementById('gallery-type').value = type;
       document.getElementById('gallery-id').value = '';
@@ -3195,7 +3219,7 @@
       document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
       document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
       document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
-      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', true);
       document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
       document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-style-label').textContent = type === 'ai' ? t('effectPromptLabel') : t('descPromptLabel');
@@ -3203,13 +3227,16 @@
       renderAiUploadFields();
       renderCreativeUploadFields();
       populateGalleryCategories(type);
-      document.getElementById('form-gallery').reset();
+      const f = document.getElementById('form-gallery');
+      f.reset();
       const galleryFileInput = document.querySelector('.drop-zone[data-drop-input="gallery-image-data"] .drop-file-input');
       if (galleryFileInput) galleryFileInput.multiple = true;
       document.getElementById('gallery-type').value = type;
+      f.compareMode.checked = false;
       clearDropZone('gallery-image-data');
       clearDropZone('gallery-before-image-data');
       clearDropZone('gallery-after-image-data');
+      updateAiCompareUploadMode();
       openModal('modal-gallery');
     }
 
@@ -3223,7 +3250,7 @@
       document.getElementById('gallery-tags-field').classList.add('hidden');
       document.getElementById('gallery-web-filter-fields').classList.toggle('hidden', type !== 'inspiration');
       document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
-      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', type !== 'ai');
+      document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', true);
       document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
       document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-web-tags-field').classList.toggle('hidden', false);
@@ -3238,6 +3265,7 @@
       pendingFiles['gallery-after-image-data'] = null;
       f.categoryInput.value = item.category;
       f.category.value = item.category;
+      f.compareMode.checked = type === 'ai' && item.displayMode === 'compare';
       f.style.value = item.style || '';
       if (type === 'ai') {
         f.tags.value = (item.tags || []).join(', ');
@@ -3252,11 +3280,13 @@
         clearDropZone('gallery-before-image-data');
         clearDropZone('gallery-after-image-data');
       }
+      updateAiCompareUploadMode();
       openModal('modal-gallery');
     }
     document.getElementById('btn-add-inspiration').addEventListener('click',()=>{ if (!requireAuth()) return; openGalleryModal('inspiration'); });
     document.getElementById('btn-add-creative').addEventListener('click',()=>{ if (!requireAuth()) return; openGalleryModal('creative'); });
     document.getElementById('btn-add-ai').addEventListener('click',()=>{ if (!requireAuth()) return; openGalleryModal('ai'); });
+    document.querySelector('#gallery-ai-compare-toggle input[name="compareMode"]')?.addEventListener('change', updateAiCompareUploadMode);
 
     document.getElementById('form-gallery').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -3314,6 +3344,7 @@
           const afterStoragePath = afterUpload?.storagePath || existingItem?.afterStoragePath || '';
           metadata.prompt = styleVal;
           metadata.aiTags = aiStructuredTags;
+          metadata.displayMode = f.compareMode?.checked ? 'compare' : 'single';
           metadata.beforeImage = beforeImage;
           metadata.afterImage = afterImage;
           metadata.beforeStoragePath = beforeStoragePath;
@@ -3331,10 +3362,10 @@
         }
         for (const uploaded of uploadedImages) {
           const displayImageUrl = type === 'ai'
-            ? (metadata.afterImage || metadata.beforeImage || uploaded.imageUrl)
+            ? (metadata.displayMode === 'compare' ? (metadata.afterImage || metadata.beforeImage || uploaded.imageUrl) : (uploaded.imageUrl || metadata.afterImage || metadata.beforeImage))
             : uploaded.imageUrl;
           const displayStoragePath = type === 'ai'
-            ? (metadata.afterStoragePath || metadata.beforeStoragePath || uploaded.storagePath)
+            ? (metadata.displayMode === 'compare' ? (metadata.afterStoragePath || metadata.beforeStoragePath || uploaded.storagePath) : (uploaded.storagePath || metadata.afterStoragePath || metadata.beforeStoragePath))
             : uploaded.storagePath;
           const payload = {
             title: styleVal,
