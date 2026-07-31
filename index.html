@@ -708,10 +708,10 @@
     .batch-preview-title { font-size: 13px; font-weight: 700; color: #242424; }
     .batch-preview-subtitle { margin-top: 2px; font-size: 11px; color: #7b7770; }
     .batch-count-badge { height: 28px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; background: #1f1f1f; color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 8px 18px rgba(0,0,0,.18); }
-    .before-after-lightbox-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; align-items: start; }
-    .before-after-lightbox-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .before-after-lightbox-label { align-self: flex-start; padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.78); color: #2f2f2f; font-size: 12px; font-weight: 700; box-shadow: 0 8px 20px rgba(0,0,0,.1); }
-    .before-after-lightbox-card img { width: 100%; max-height: 82vh; object-fit: contain; border-radius: 18px; box-shadow: 0 18px 56px rgba(0,0,0,.14); }
+    .before-after-lightbox-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; height: 100%; align-items: stretch; }
+    .before-after-lightbox-card { position: relative; display: flex; min-width: 0; height: 100%; }
+    .before-after-lightbox-label { position: absolute; top: 8px; left: 8px; z-index: 2; padding: 5px 12px; border-radius: 999px; background: rgba(255,255,255,.88); color: #2f2f2f; font-size: 12px; font-weight: 700; box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+    .before-after-lightbox-card img { width: 100%; height: 100%; max-height: 82vh; object-fit: cover; border-radius: 18px; box-shadow: 0 18px 56px rgba(0,0,0,.14); }
     @media (max-width: 767px) { .before-after-lightbox-grid { grid-template-columns: 1fr; } }
     .batch-thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .batch-thumb { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: #dedbd5; box-shadow: inset 0 0 0 1px rgba(255,255,255,.55); }
@@ -959,13 +959,13 @@
           <div class="flex items-center justify-between gap-3">
             <span data-i18n="uploadImage">展示图</span>
             <label id="gallery-ai-compare-toggle" class="hidden items-center gap-2 text-xs text-ink/60 select-none">
-              <span>单图</span>
+              <span data-i18n="singleImageMode">单图</span>
               <input name="compareMode" type="checkbox" class="sr-only peer" />
               <span class="relative w-10 h-6 rounded-full bg-line transition peer-checked:bg-deep after:content-[''] after:absolute after:top-1 after:left-1 after:w-4 after:h-4 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-4"></span>
-              <span>双图对比</span>
+              <span data-i18n="compareImageMode">双图对比</span>
             </label>
           </div>
-          <div class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
+          <div id="gallery-main-drop-field" class="drop-zone mt-1.5" data-drop-input="gallery-image-data" role="button" tabindex="0">
             <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
             <div class="drop-zone-empty">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
@@ -976,6 +976,34 @@
             <img class="drop-zone-preview" alt="" />
             <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
           </div>
+          <div id="gallery-ai-before-after-fields" class="grid grid-cols-2 gap-3 hidden mt-1.5">
+            <div class="block text-sm">
+              <span>Before</span>
+              <input type="hidden" name="beforeImage" id="gallery-before-image-data" />
+              <div class="drop-zone mt-1.5" data-drop-input="gallery-before-image-data" role="button" tabindex="0">
+                <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+                <div class="drop-zone-empty">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+                  <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+                </div>
+                <img class="drop-zone-preview" alt="" />
+                <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+              </div>
+            </div>
+            <div class="block text-sm">
+              <span>After</span>
+              <input type="hidden" name="afterImage" id="gallery-after-image-data" />
+              <div class="drop-zone mt-1.5" data-drop-input="gallery-after-image-data" role="button" tabindex="0">
+                <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
+                <div class="drop-zone-empty">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
+                  <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
+                </div>
+                <img class="drop-zone-preview" alt="" />
+                <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
+              </div>
+            </div>
+          </div>
         </div>
         <label id="gallery-category-field" class="block text-sm"><span data-i18n="typeLabel">类型</span>
           <select name="category" id="gallery-category-select" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select>
@@ -983,34 +1011,6 @@
           <datalist id="ai-category-datalist"></datalist></label>
         <div id="gallery-web-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
         <div id="gallery-ai-filter-fields" class="grid grid-cols-2 gap-3 hidden"></div>
-        <div id="gallery-ai-before-after-fields" class="grid grid-cols-2 gap-3 hidden">
-          <div class="block text-sm">
-            <span>Before</span>
-            <input type="hidden" name="beforeImage" id="gallery-before-image-data" />
-            <div class="drop-zone mt-1.5" data-drop-input="gallery-before-image-data" role="button" tabindex="0">
-              <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
-              <div class="drop-zone-empty">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
-                <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
-              </div>
-              <img class="drop-zone-preview" alt="" />
-              <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
-            </div>
-          </div>
-          <div class="block text-sm">
-            <span>After</span>
-            <input type="hidden" name="afterImage" id="gallery-after-image-data" />
-            <div class="drop-zone mt-1.5" data-drop-input="gallery-after-image-data" role="button" tabindex="0">
-              <input type="file" class="drop-file-input sr-only" accept="image/jpeg,image/png,image/webp,image/gif" />
-              <div class="drop-zone-empty">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.6"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg>
-                <p class="drop-zone-hint text-[12px]" data-i18n="dropHint">拖拽图片到此处，或点击选择</p>
-              </div>
-              <img class="drop-zone-preview" alt="" />
-              <button type="button" class="drop-zone-remove" data-i18n="removeImage">移除</button>
-            </div>
-          </div>
-        </div>
         <div id="gallery-creative-fields" class="grid grid-cols-2 gap-3 hidden">
           <label class="block text-sm"><span data-i18n="regionLabel">地区</span>
             <select name="creativeRegion" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
@@ -1162,10 +1162,10 @@
     const AI_CATEGORIES_BASE = ['节日氛围', '图片编辑', '人像编辑', '身材美型', '头发', 'AI Image'];
     const AI_FILTER_GROUPS = [
       { key: 'useCase', label: '推荐用途', options: ['影像编辑', '品牌设计'] },
+      { key: 'ethnicity', label: '族裔', options: ['白人', '黑人', '拉丁裔', '中东裔', '混血', '其他'] },
       { key: 'holiday', label: '节日氛围', options: ['巴西狂欢节', '情人节', '圣帕特里克节', '复活节', '母亲节', '巴西Festa Junina', '毕业季', '万圣节', '感恩节', '黑五', '圣诞节', '新年'] },
       { key: 'imageEdit', label: '图片编辑', options: ['Relight', '消除笔', '画质增强', 'AI Replace', '滤镜', '扩图'] },
       { key: 'portraitEdit', label: '人像编辑', options: ['美妆', '面部重塑', '牙齿', '肌肤', '纹身', '表情'] },
-      { key: 'ethnicity', label: '族裔', options: ['白人', '黑人', '拉丁裔', '中东裔', '混血', '其他'] },
       { key: 'bodyShape', label: '身材美型', options: ['塑形', '增肌'] },
       { key: 'hair', label: '头发', options: ['发型', '发色', '头发细节'] },
       { key: 'aiImage', label: 'AI Image', options: ['姿态重塑', '拍立得'] },
@@ -1207,6 +1207,7 @@
         removeImage: '移除', imageRequired: '请上传图片', imageInvalid: '请上传 JPG / PNG / WebP / GIF 图片',
         imageTooLarge: '图片不能超过 200KB，请换一张更小的图片或降低分辨率', imageProcessing: '正在处理图片…',
         imageMaxHint: '单张图片上限 200KB，将自动压缩',
+        singleImageMode: '单图', compareImageMode: '双图对比',
         selectPlaceholder: '请选择', addOptionPrompt: '添加细项', kolNameLabel: '账号名', profileLinkLabel: '主页链接', followersLabel: '粉丝量', genderLabel: '性别', regionLabel: '地区', typeLabel: '类型', typeInputPlaceholder: '选择或输入新类型', ethnicityLabel: '人种', styleDescLabel: '风格描述', regionPlaceholder: '东京', ethnicityPlaceholder: '选择或输入新人种', batchUploadHint: '支持批量上传，可一次选择多张图片', effectPromptLabel: 'Prompt', descPromptLabel: '描述 / Prompt', styleDescPlaceholder: '高冷/复古/Y2K', kolSearchTagsPlaceholder: 'Y2K, 复古, 街拍', gallerySearchTagsPlaceholder: '柔光, 人像, 白底',
       },
       en: {
@@ -1241,6 +1242,7 @@
         removeImage: 'Remove', imageRequired: 'Please upload an image', imageInvalid: 'Use JPG, PNG, WebP or GIF',
         imageTooLarge: 'Image must be under 200KB. Use a smaller file or lower resolution.', imageProcessing: 'Processing image…',
         imageMaxHint: 'Max 200KB per image (auto-compressed)',
+        singleImageMode: 'Single', compareImageMode: 'Compare',
         selectPlaceholder: 'Select', addOptionPrompt: 'Add option', kolNameLabel: 'Account name', profileLinkLabel: 'Profile link', followersLabel: 'Followers', genderLabel: 'Gender', regionLabel: 'Region', typeLabel: 'Type', typeInputPlaceholder: 'Select or enter new type', ethnicityLabel: 'Ethnicity', styleDescLabel: 'Style description', regionPlaceholder: 'Tokyo', ethnicityPlaceholder: 'Select or enter ethnicity', batchUploadHint: 'Batch upload supported; select multiple images at once', effectPromptLabel: 'Prompt', descPromptLabel: 'Description / Prompt', styleDescPlaceholder: 'Cool / Vintage / Y2K', kolSearchTagsPlaceholder: 'Y2K, vintage, street style', gallerySearchTagsPlaceholder: 'Soft light, portrait, white background',
       },
     };
@@ -1258,7 +1260,7 @@
     };
     const UI_LABELS_EN = {
       '全部': 'All', '推荐用途': 'Use case', '性别': 'Gender', '年龄': 'Age', '人数': 'People', '族裔': 'Ethnicity', '人像占比': 'Shot size', '光影质感': 'Lighting', '情绪': 'Mood',
-      '人像编辑': 'Portrait Edit', '图片编辑': 'Image Edit', '身材美型': 'Body Shape', '头发': 'Hair', '发型': 'Hair', '女': 'Female', '男': 'Male', '其他': 'Other',
+      '影像编辑': 'Video Edit', '品牌设计': 'Brand Design', '人像编辑': 'Portrait Edit', '图片编辑': 'Image Edit', '身材美型': 'Body Shape', '头发': 'Hair', '发型': 'Hair', '女': 'Female', '男': 'Male', '其他': 'Other',
       '单人': 'Solo', '情侣': 'Couple', '好友': 'Friends', '家庭': 'Family', '白人': 'White', '黑人': 'Black', '拉丁裔': 'Latino', '中东裔': 'Middle Eastern', '混血': 'Mixed',
       '特写': 'Close-up', '中景': 'Medium', '全景': 'Full shot', '远景': 'Long shot', '阳光晴朗': 'Sunny', '清晨': 'Morning', '夜景': 'Night', '夕阳': 'Sunset', '高级棚拍': 'Studio',
       '露齿大笑': 'Big smile', '高级冷酷脸': 'Cool face', '自信气场': 'Confident', '搞怪多巴胺': 'Playful', '松弛': 'Relaxed',
@@ -3206,7 +3208,8 @@
       const isCompare = !!f?.compareMode?.checked;
       document.getElementById('gallery-ai-compare-toggle')?.classList.toggle('hidden', !isAi);
       document.getElementById('gallery-ai-compare-toggle')?.classList.toggle('flex', isAi);
-      document.getElementById('gallery-main-image-field')?.classList.toggle('hidden', isAi && isCompare);
+      document.getElementById('gallery-main-image-field')?.classList.remove('hidden');
+      document.getElementById('gallery-main-drop-field')?.classList.toggle('hidden', isAi && isCompare);
       document.getElementById('gallery-ai-before-after-fields')?.classList.toggle('hidden', !isAi || !isCompare);
     }
 
