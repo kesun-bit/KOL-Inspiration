@@ -200,6 +200,29 @@
       transition: transform .2s ease, opacity .2s ease;
     }
     .kol-profile-link:hover { opacity: .86; transform: translateX(1px); }
+    .creative-source-link {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 6;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(0,0,0,.38);
+      box-shadow: 0 4px 14px rgba(0,0,0,.14);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transform: translateY(6px);
+      cursor: pointer;
+      transition: opacity .2s ease, transform .2s ease, background .2s ease;
+    }
+    .creative-source-link:hover { background: rgba(0,0,0,.58); transform: translateX(1px); }
+    .media-card:hover .creative-source-link,
+    .media-card:focus-within .creative-source-link { opacity: 1; transform: translateY(0); }
 
     .header-search {
       position: relative;
@@ -1032,10 +1055,13 @@
           <label class="block text-sm"><span data-i18n="typeLabel">类型</span>
             <select name="creativeDetail" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm"></select></label>
         </div>
+        <label id="gallery-creative-link-field" class="block text-sm hidden"><span data-i18n="sourceLinkLabel">原图链接</span>
+          <input name="sourceLink" type="url" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="sourceLinkPlaceholder" placeholder="https://..." /></label>
         <label id="gallery-style-field" class="block text-sm"><span id="gallery-style-label">描述 / Prompt</span>
           <input name="style" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="cinematic portrait, soft light..." /></label>
         <label id="gallery-web-tags-field" class="block text-sm"><span data-i18n="searchTagsLabel">搜索标签（逗号分隔，不显示在图片上）</span>
-          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="gallerySearchTagsPlaceholder" placeholder="柔光, 人像, 白底" /></label>
+          <input name="searchTags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" data-i18n-placeholder="gallerySearchTagsPlaceholder" placeholder="柔光, 人像, 白底" />
+          <span id="gallery-auto-tags-status" class="block min-h-4 mt-1.5 text-[11px] text-ink/50" aria-live="polite"></span></label>
         <label id="gallery-tags-field" class="block text-sm hidden"><span data-i18n="detailTags">细节标签（逗号分隔，仅 AI 模特）</span>
           <input name="tags" class="mt-1.5 w-full h-11 px-4 rounded-xl border border-line bg-wash text-sm" placeholder="白色针织开衫, 自然光, 浅景深" /></label>
         <div class="flex gap-3 pt-2">
@@ -1222,8 +1248,11 @@
         removeImage: '移除', imageRequired: '请上传图片', imageInvalid: '请上传 JPG / PNG / WebP / GIF 图片',
         imageTooLarge: '图片不能超过 200KB，请换一张更小的图片或降低分辨率', imageProcessing: '正在处理图片…',
         imageMaxHint: '单张图片上限 200KB，将自动压缩',
+        autoTagsAnalyzing: '正在分析人物 / 服饰 / 场景 / 摄影风格 / 动作 / 情感…',
+        autoTagsReady: '已自动生成 {count} 个标签，可继续编辑',
+        autoTagsFailed: '自动分析暂不可用，请手动填写标签',
         singleImageMode: '单图', compareImageMode: '双图对比',
-        selectPlaceholder: '请选择', addOptionPrompt: '添加细项', kolNameLabel: '账号名', profileLinkLabel: '主页链接', followersLabel: '粉丝量', genderLabel: '性别', regionLabel: '地区', typeLabel: '类型', typeInputPlaceholder: '选择或输入新类型', ethnicityLabel: '人种', styleDescLabel: '风格描述', regionPlaceholder: '东京', ethnicityPlaceholder: '选择或输入新人种', batchUploadHint: '支持批量上传，可一次选择多张图片', effectPromptLabel: 'Prompt', descPromptLabel: '描述 / Prompt', styleDescPlaceholder: '高冷/复古/Y2K', kolSearchTagsPlaceholder: 'Y2K, 复古, 街拍', gallerySearchTagsPlaceholder: '柔光, 人像, 白底',
+        selectPlaceholder: '请选择', addOptionPrompt: '添加细项', kolNameLabel: '账号名', profileLinkLabel: '主页链接', sourceLinkLabel: '原图链接', sourceLinkPlaceholder: '粘贴灵感来源链接（可选）', followersLabel: '粉丝量', genderLabel: '性别', regionLabel: '地区', typeLabel: '类型', typeInputPlaceholder: '选择或输入新类型', ethnicityLabel: '人种', styleDescLabel: '风格描述', regionPlaceholder: '东京', ethnicityPlaceholder: '选择或输入新人种', batchUploadHint: '支持批量上传，可一次选择多张图片', effectPromptLabel: 'Prompt', descPromptLabel: '描述 / Prompt', styleDescPlaceholder: '高冷/复古/Y2K', kolSearchTagsPlaceholder: 'Y2K, 复古, 街拍', gallerySearchTagsPlaceholder: '柔光, 人像, 白底',
       },
       en: {
         tabKol: 'Influencers', tabWeb: 'Web Models', tabCreative: 'Inspiration', tabAi: 'AI Models', upload: 'Upload',
@@ -1257,8 +1286,11 @@
         removeImage: 'Remove', imageRequired: 'Please upload an image', imageInvalid: 'Use JPG, PNG, WebP or GIF',
         imageTooLarge: 'Image must be under 200KB. Use a smaller file or lower resolution.', imageProcessing: 'Processing image…',
         imageMaxHint: 'Max 200KB per image (auto-compressed)',
+        autoTagsAnalyzing: 'Analyzing people / clothing / scene / photography / action / emotion…',
+        autoTagsReady: '{count} tags generated automatically; you can edit them',
+        autoTagsFailed: 'Automatic analysis is unavailable; enter tags manually',
         singleImageMode: 'Single', compareImageMode: 'Compare',
-        selectPlaceholder: 'Select', addOptionPrompt: 'Add option', kolNameLabel: 'Account name', profileLinkLabel: 'Profile link', followersLabel: 'Followers', genderLabel: 'Gender', regionLabel: 'Region', typeLabel: 'Type', typeInputPlaceholder: 'Select or enter new type', ethnicityLabel: 'Ethnicity', styleDescLabel: 'Style description', regionPlaceholder: 'Tokyo', ethnicityPlaceholder: 'Select or enter ethnicity', batchUploadHint: 'Batch upload supported; select multiple images at once', effectPromptLabel: 'Prompt', descPromptLabel: 'Description / Prompt', styleDescPlaceholder: 'Cool / Vintage / Y2K', kolSearchTagsPlaceholder: 'Y2K, vintage, street style', gallerySearchTagsPlaceholder: 'Soft light, portrait, white background',
+        selectPlaceholder: 'Select', addOptionPrompt: 'Add option', kolNameLabel: 'Account name', profileLinkLabel: 'Profile link', sourceLinkLabel: 'Source link', sourceLinkPlaceholder: 'Paste the inspiration source URL (optional)', followersLabel: 'Followers', genderLabel: 'Gender', regionLabel: 'Region', typeLabel: 'Type', typeInputPlaceholder: 'Select or enter new type', ethnicityLabel: 'Ethnicity', styleDescLabel: 'Style description', regionPlaceholder: 'Tokyo', ethnicityPlaceholder: 'Select or enter ethnicity', batchUploadHint: 'Batch upload supported; select multiple images at once', effectPromptLabel: 'Prompt', descPromptLabel: 'Description / Prompt', styleDescPlaceholder: 'Cool / Vintage / Y2K', kolSearchTagsPlaceholder: 'Y2K, vintage, street style', gallerySearchTagsPlaceholder: 'Soft light, portrait, white background',
       },
     };
 
@@ -1734,6 +1766,7 @@
         webTags: m.webTags || {},
         aiTags: m.aiTags || {},
         searchTags: Array.isArray(m.searchTags) ? m.searchTags : [],
+        sourceLink: m.sourceLink || '',
         storagePath: row.storage_path || '',
       };
       if (row.category === 'net_model' && !item.searchTags.length) item.searchTags = buildInspirationSearchTags(item);
@@ -2249,6 +2282,46 @@
       return true;
     }
 
+    let galleryTagAnalysisRequest = 0;
+
+    function setGalleryAutoTagsStatus(message, isError = false) {
+      const status = document.getElementById('gallery-auto-tags-status');
+      if (!status) return;
+      status.textContent = message || '';
+      status.classList.toggle('text-red-600', isError);
+      status.classList.toggle('text-ink/50', !isError);
+    }
+
+    async function analyzeWebImageTags(imageDataUrl) {
+      if (document.getElementById('gallery-type')?.value !== 'inspiration') return;
+      const requestId = ++galleryTagAnalysisRequest;
+      const form = document.getElementById('form-gallery');
+      const input = form?.searchTags;
+      if (!input) return;
+      setGalleryAutoTagsStatus(t('autoTagsAnalyzing'));
+      input.setAttribute('aria-busy', 'true');
+      try {
+        const response = await fetch('/api/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imageDataUrl }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'VISION_REQUEST_FAILED');
+        if (requestId !== galleryTagAnalysisRequest || document.getElementById('gallery-type')?.value !== 'inspiration') return;
+        const generated = Array.isArray(result.tags) ? result.tags.filter(Boolean) : [];
+        const existing = parseTagsFromString(input.value);
+        input.value = [...new Set([...existing, ...generated])].join(', ');
+        setGalleryAutoTagsStatus(t('autoTagsReady').replace('{count}', generated.length));
+      } catch (err) {
+        if (requestId !== galleryTagAnalysisRequest) return;
+        console.warn('automatic image tagging failed', err);
+        setGalleryAutoTagsStatus(t('autoTagsFailed'), true);
+      } finally {
+        if (requestId === galleryTagAnalysisRequest) input.removeAttribute('aria-busy');
+      }
+    }
+
     async function handleImageFile(file, inputId) {
       if (!file || !file.type.startsWith('image/')) {
         alert(t('imageInvalid'));
@@ -2262,6 +2335,7 @@
         const { file: readyFile, previewUrl } = await prepareImageForUpload(file);
         pendingFiles[inputId] = readyFile;
         setDropZoneImage(inputId, previewUrl);
+        if (inputId === 'gallery-image-data') await analyzeWebImageTags(previewUrl);
       } catch (err) {
         if (err.message === 'TOO_LARGE') alert(t('imageTooLarge'));
         else {
@@ -2288,6 +2362,7 @@
         }
         pendingFiles[inputId] = prepared[0]?.file || null;
         setDropZoneBatch(inputId, prepared);
+        if (inputId === 'gallery-image-data' && prepared[0]?.previewUrl) await analyzeWebImageTags(prepared[0].previewUrl);
       } catch (err) {
         if (err.message === 'TOO_LARGE') alert(t('imageTooLarge'));
         else {
@@ -2898,13 +2973,14 @@
           <div class="media-card rounded-[20px] relative group card-img-wrap">
             ${favBtnHtml(mode, item.id)}
             ${buildCardImgHtml(item.image, item.style || '', 'w-full h-auto block')}
+            ${mode === 'creative' && item.sourceLink ? `<a href="${esc(item.sourceLink)}" target="_blank" rel="noopener noreferrer" class="creative-source-link" aria-label="${esc(t('viewProfile'))}" title="${esc(t('sourceLinkLabel'))}">${viewArrowSvg()}</a>` : ''}
           </div>
         </div>`;
       }).join('');
       bindFavoriteButtons(c);
       bindCardImages(c);
       c.querySelectorAll('[data-lightbox]').forEach((card)=>card.addEventListener('click',(e)=>{
-        if (e.target.closest('.fav-btn')) return;
+        if (e.target.closest('.fav-btn, .creative-source-link')) return;
         const data=JSON.parse(card.dataset.lightbox.replace(/&#39;/g,"'"));
         openLightbox(data, card.dataset.mode==='ai');
       }));
@@ -3267,6 +3343,8 @@
     }
 
     function openGalleryModal(type) {
+      galleryTagAnalysisRequest++;
+      setGalleryAutoTagsStatus('');
       document.getElementById('gallery-type').value = type;
       document.getElementById('gallery-id').value = '';
       const titles = { inspiration: t('addWeb'), creative: t('addCreative'), ai: t('addAi') };
@@ -3277,6 +3355,7 @@
       document.getElementById('gallery-ai-filter-fields').classList.toggle('hidden', type !== 'ai');
       document.getElementById('gallery-ai-before-after-fields').classList.toggle('hidden', true);
       document.getElementById('gallery-creative-fields').classList.toggle('hidden', type !== 'creative');
+      document.getElementById('gallery-creative-link-field').classList.toggle('hidden', type !== 'creative');
       document.getElementById('gallery-style-field').classList.toggle('hidden', type === 'inspiration' || type === 'creative');
       document.getElementById('gallery-style-label').textContent = type === 'ai' ? t('effectPromptLabel') : t('descPromptLabel');
       renderWebUploadFields();
@@ -3323,6 +3402,7 @@
       f.category.value = item.category;
       f.compareMode.checked = type === 'ai' && item.displayMode === 'compare';
       f.style.value = item.style || '';
+      f.sourceLink.value = type === 'creative' ? (item.sourceLink || '') : '';
       if (type === 'ai') {
         restoreAiUploadSelections(f, item.aiTags || {});
         f.tags.value = (item.tags || []).join(', ');
@@ -3416,6 +3496,7 @@
           metadata.searchTags = manualTags.length ? manualTags : buildInspirationSearchTags({ category: categoryVal, style: styleVal, webTags: webStructuredTags });
         } else {
           const webTags = parseTagsFromString(f.searchTags?.value);
+          metadata.sourceLink = f.sourceLink?.value.trim() || '';
           metadata.searchTags = webTags.length ? webTags : buildCreativeSearchTags({ category: categoryVal, style: styleVal });
         }
         for (const uploaded of uploadedImages) {
